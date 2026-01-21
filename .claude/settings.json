@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "mcpServers": {},
+  "customInstructions": "# The Council Project Guidelines\n\n## Project Context\nThis is a CLI tool for multi-model AI deliberation. The \"Council\" queries 5 frontier models in parallel (Claude, GPT, Grok, Llama, Perplexity), synthesizes their responses, and returns a unified answer through a \"Personal Brain\" interface.\n\n## Code Style & Architecture\n- Use TypeScript strict mode with ES modules\n- Follow the Provider interface pattern for all LLM integrations\n- All API calls go through Vercel AI SDK (@ai-sdk/*)\n- Error handling must be graceful - continue with remaining models if 1-2 fail\n- Use Promise.allSettled() for parallel Council queries\n- Maintain separation between production code (src/) and evaluation code (src/eval/)\n\n## Implementation Guidelines\n- Follow the 7 phases in PLAN.md sequentially\n- Each phase must be verified before moving to the next\n- Mark completed tasks in PLAN.md with checkboxes\n- Document any extra steps taken beyond the plan\n- Keep MVP scope tight - no feature creep\n\n## Testing Requirements\n- Every provider wrapper must be individually testable\n- Council must handle partial failures gracefully\n- Consensus module must produce structured ConsensusResult\n- Phase 7 evaluation must compare Council vs individual models\n\n## Security & API Keys\n- NEVER commit API keys to git\n- Always use .env for sensitive config\n- Validate all 5 API keys are present before running Council\n- Handle API rate limits and timeouts (30s per provider)\n\n## CLI UX Expectations\n- Show real-time progress as each model responds\n- Use ora spinners for visual feedback\n- Pretty-print responses with markdown support\n- Display timing information\n- Handle Ctrl+C gracefully\n\n## Before Committing\n- Run TypeScript compiler to check for type errors\n- Verify provider connectivity with --test-providers flag\n- Test error handling scenarios (missing API keys, network failures)\n- Update PLAN.md task checkboxes",
+  "allowedCommands": [
+    {
+      "command": "npm install",
+      "description": "Install npm dependencies"
+    },
+    {
+      "command": "npm run *",
+      "description": "Run npm scripts"
+    },
+    {
+      "command": "npx tsx src/**/*.ts",
+      "description": "Run TypeScript files with tsx"
+    },
+    {
+      "command": "npx tsc --noEmit",
+      "description": "Type-check TypeScript without emitting files"
+    },
+    {
+      "command": "node dist/**/*.js",
+      "description": "Run compiled JavaScript files"
+    },
+    {
+      "command": "git status",
+      "description": "Check git status"
+    },
+    {
+      "command": "git diff",
+      "description": "View git changes"
+    },
+    {
+      "command": "git add *",
+      "description": "Stage files for commit"
+    },
+    {
+      "command": "git commit -m *",
+      "description": "Create git commit"
+    },
+    {
+      "command": "git log",
+      "description": "View git history"
+    },
+    {
+      "command": "git branch",
+      "description": "List git branches"
+    },
+    {
+      "command": "git checkout *",
+      "description": "Switch git branches"
+    },
+    {
+      "command": "curl *",
+      "description": "Test API endpoints"
+    },
+    {
+      "command": "echo *",
+      "description": "Print environment variables for debugging"
+    }
+  ],
+  "alwaysAllowReadOnly": true,
+  "alwaysAllowWriteOnly": false,
+  "autoApprovalSettings": {
+    "bashCommands": {
+      "enabled": true,
+      "commands": [
+        "npm install",
+        "npx tsc --noEmit",
+        "git status",
+        "git diff"
+      ]
+    },
+    "editOperations": {
+      "enabled": false
+    }
+  }
+}
