@@ -75,5 +75,11 @@
     "editOperations": {
       "enabled": false
     }
-  }
+  },
+  "blockedFilePaths": [
+    "**/.env",
+    "**/.env.*",
+    "**/*.env",
+    "!**/.env.example"
+  ]
 }

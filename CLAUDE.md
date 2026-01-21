@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to 5 frontier models deliberating in parallel, then synthesizes a unified response.
+This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to 4 frontier models deliberating in parallel, then synthesizes a unified response.
 
 **Goal:** Prove Second Brain answers are preferred >60% of the time vs best single model.
 
@@ -37,12 +37,11 @@ User → CLI → Personal Brain (Claude Sonnet) → Second Brain (5 models in pa
 - **LLM SDKs:** Vercel AI SDK (`@ai-sdk/*`) for unified provider interface
 - **CLI Framework:** Commander.js
 
-### The Five Second Brain Models
+### The Four Second Brain Models
 1. Claude Sonnet 4.5 (Anthropic)
 2. GPT-5.2 (OpenAI)
 3. Grok (xAI)
-4. Llama (via Groq)
-5. Perplexity
+4. Llama 4 Maverick (via Groq) - `meta-llama/llama-4-maverick-17b-128e-instruct`
 
 ### Personal Brain
 - Default: Claude Sonnet 4.5
@@ -74,7 +73,6 @@ Each provider has its own directory with shared logic and model-specific impleme
 - `providers/openai/` - Shared OpenAI logic + gpt-5-2.ts
 - `providers/xai/` - Shared xAI logic + grok.ts
 - `providers/groq/` - Shared Groq logic + llama.ts
-- `providers/perplexity/` - Shared Perplexity logic + perplexity.ts
 
 Each provider's `index.ts` handles:
 - API client setup via Vercel AI SDK
@@ -88,9 +86,9 @@ Each model-specific file handles:
 
 ### Second Brain Module (`src/second-brain/`)
 Orchestrates parallel querying:
-- Uses `Promise.allSettled()` to query all 5 providers simultaneously
+- Uses `Promise.allSettled()` to query all 4 providers simultaneously
 - 30s timeout per provider
-- Handles partial failures (continues if 1-2 models fail)
+- Handles partial failures (continues if 1 model fails)
 - Emits progress events for CLI streaming UI
 
 ### Consensus Module (`src/consensus/`)
@@ -105,7 +103,7 @@ interface ConsensusResult {
 }
 ```
 
-**MVP Strategy:** SimpleSynthesis sends all 5 responses to Personal Brain with a synthesis prompt that:
+**MVP Strategy:** SimpleSynthesis sends all 4 responses to Personal Brain with a synthesis prompt that:
 1. Combines insights from all models
 2. Identifies agreement vs disagreement patterns
 3. Produces confidence level based on consensus
@@ -145,7 +143,6 @@ Required API keys (see `.env.example`):
 - `OPENAI_API_KEY`
 - `XAI_API_KEY`
 - `GROQ_API_KEY`
-- `PERPLEXITY_API_KEY`
 
 Optional:
 - `SECOND_BRAIN_TIMEOUT_MS` (default: 30000)
@@ -159,9 +156,13 @@ MVPs must be tight in scope. Each task within phases should be highly testable.
 ### Task Tracking in PLAN.md
 When implementing phases:
 
-1. **Mark completed tasks:** Check off tasks as you finish them using checkboxes
-2. **Document extra steps:** If you had to do additional work beyond what was planned to complete a task, document those extra steps in PLAN.md under the relevant task
-3. **Keep it testable:** Each task should have clear verification criteria
+1. **Check for build errors FIRST:** Before marking any phase as complete, ALWAYS run `npx tsc --noEmit` to check for TypeScript build errors. ALWAYS run `npm run lint` to check for linter errors or warnings. Fix all errors, compiler warnings, and linter issues before proceeding. Linter errors can attempted to be fixed with `npm run format` and `npm run lint:fix`
+2. **Mark completed tasks:** Check off tasks as you finish them using checkboxes
+3. **Document extra steps:** If you had to do additional work beyond what was planned to complete a task, document those extra steps in PLAN.md under the relevant task
+4. **Keep it testable:** Each task should have clear verification criteria
+5. **Update README.md:** Whenever you add a feature that has implications for how end users interact with the system (new CLI commands, flags, configuration options, etc.), update the README.md with clear documentation and usage examples
+
+**CRITICAL:** Never mark a phase as "finished" if there are build errors, compiler errors, or linter warnings.
 
 Example:
 ```markdown
@@ -204,7 +205,6 @@ Consulting Claude... ✓
 Consulting GPT... ✓
 Consulting Grok... ✓
 Consulting Llama... ✓
-Consulting Perplexity... ✓
 Second Brain is synthesizing...
 ```
 
