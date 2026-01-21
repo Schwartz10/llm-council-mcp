@@ -49,6 +49,30 @@ User → CLI → Personal Brain (Claude Sonnet) → Second Brain (5 models in pa
 
 ## Code Architecture
 
+### Configuration (`src/config.ts`)
+Single source of truth for all configurations - both environment variables and council model definitions.
+
+**Environment Config:**
+- Loads API keys from .env file
+- Optional timeout and debug settings
+- Graceful handling of missing API keys
+
+**Model Config (`COUNCIL_MODELS` array):**
+```typescript
+interface ModelConfig {
+  name: string;           // Display name (e.g., "GPT")
+  provider: string;       // Provider type (e.g., "openai")
+  apiKey?: string;        // From env
+  models: string[];       // Array of model IDs to try (first = primary, rest = fallbacks)
+}
+```
+
+**Key Features:**
+- User-editable with good defaults
+- Automatic fallback: models tried in order until one succeeds
+- Test output shows which specific model connected
+- Enables graceful degradation (e.g., GPT-5.2 → gpt-4o → gpt-4-turbo)
+
 ### Provider Abstraction (`src/providers/`)
 All LLM providers implement the same interface:
 

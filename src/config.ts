@@ -16,6 +16,13 @@ export interface Config {
   debug: boolean;
 }
 
+export interface ModelConfig {
+  name: string; // Display name (e.g., "GPT")
+  provider: string; // Provider type (e.g., "openai")
+  apiKey?: string; // From env
+  models: string[]; // Array of model IDs to try (first = primary, rest = fallbacks)
+}
+
 /**
  * Gets the value of an environment variable, returns undefined if not set
  */
@@ -53,3 +60,52 @@ export function loadConfig(): Config {
     debug: process.env.SECOND_BRAIN_DEBUG === 'true',
   };
 }
+
+// Load environment config
+const env = loadConfig();
+
+/**
+ * Council model configurations
+ * This is the single source of truth for all model configs.
+ *
+ * Models are tried in array order - first is primary, rest are fallbacks.
+ * Users can edit this array to customize which models to use.
+ */
+export const COUNCIL_MODELS: ModelConfig[] = [
+  {
+    name: 'Claude Sonnet 4.5',
+    provider: 'anthropic',
+    apiKey: env.anthropicApiKey,
+    models: [
+      'claude-sonnet-4-5-20250929', // Primary: Latest Sonnet 4.5
+      'claude-sonnet-3-5-20241022', // Fallback: Sonnet 3.5
+    ],
+  },
+  {
+    name: 'GPT',
+    provider: 'openai',
+    apiKey: env.openaiApiKey,
+    models: [
+      'gpt-5.2', // Primary: GPT-5.2 (requires org verification)
+      'gpt-4o', // Fallback: GPT-4 Optimized (widely available)
+      'gpt-4-turbo', // Fallback: GPT-4 Turbo
+    ],
+  },
+  {
+    name: 'Grok',
+    provider: 'xai',
+    apiKey: env.xaiApiKey,
+    models: [
+      'grok-3-beta', // Primary: Latest Grok
+    ],
+  },
+  {
+    name: 'Llama 4 Maverick',
+    provider: 'groq',
+    apiKey: env.groqApiKey,
+    models: [
+      'meta-llama/llama-4-maverick-17b-128e-instruct', // Primary: Llama 4 Maverick (128 experts)
+      'llama-3.3-70b-versatile', // Fallback: Llama 3.3
+    ],
+  },
+];

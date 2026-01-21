@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { loadConfig, Config, getMissingApiKeys } from './config.js';
+import { getMissingApiKeys, COUNCIL_MODELS, ModelConfig } from './config.js';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createXai } from '@ai-sdk/xai';
@@ -21,10 +21,7 @@ program.name('second-brain').description('Multi-model AI deliberation CLI tool')
 
 program
   .option('--test-providers', 'Test connectivity to all AI providers')
-  .option(
-    '--test-provider <provider>',
-    'Test connectivity to a specific provider (e.g., anthropic/claude-sonnet-4-5)'
-  )
+  .option('--test-provider <provider>', 'Test connectivity to a specific provider (e.g., "GPT")')
   .action(async (options: CliOptions) => {
     if (options.testProvider) {
       await testSingleProvider(options.testProvider);
@@ -35,91 +32,69 @@ program
     }
   });
 
-// Provider test definitions
-type ProviderTestFn = (config: Config) => Promise<boolean>;
-
-interface ProviderTest {
-  key: string;
-  displayName: string;
-  configKey: keyof Config;
-  testFn: ProviderTestFn;
+/**
+ * Creates a provider client based on provider type
+ */
+function createProviderClient(provider: string, apiKey: string) {
+  switch (provider) {
+    case 'anthropic':
+      return createAnthropic({ apiKey });
+    case 'openai':
+      return createOpenAI({ apiKey });
+    case 'xai':
+      return createXai({ apiKey });
+    case 'groq':
+      return createGroq({ apiKey });
+    default:
+      throw new Error(`Unknown provider: ${provider}`);
+  }
 }
 
-const PROVIDER_TESTS: ProviderTest[] = [
-  {
-    key: 'anthropic/claude-sonnet-4-5',
-    displayName: 'Claude Sonnet 4.5',
-    configKey: 'anthropicApiKey',
-    testFn: async (config) => {
-      const anthropic = createAnthropic({ apiKey: config.anthropicApiKey });
-      const result = await generateText({
-        model: anthropic('claude-sonnet-4-5-20250929'),
-        prompt: 'Say "Hello from Claude" and nothing else.',
-      });
-      return result.text.includes('Claude') || result.text.includes('Hello');
-    },
-  },
-  {
-    key: 'openai/gpt-5-2',
-    displayName: 'GPT-5.2',
-    configKey: 'openaiApiKey',
-    testFn: async (config) => {
-      const openai = createOpenAI({ apiKey: config.openaiApiKey });
-      const result = await generateText({
-        model: openai('gpt-5.2'),
-        prompt: 'Say "Hello from GPT" and nothing else.',
-      });
-      return result.text.includes('GPT') || result.text.includes('Hello');
-    },
-  },
-  {
-    key: 'xai/grok-beta',
-    displayName: 'Grok',
-    configKey: 'xaiApiKey',
-    testFn: async (config) => {
-      const xai = createXai({ apiKey: config.xaiApiKey });
-      const result = await generateText({
-        model: xai('grok-3-beta'),
-        prompt: 'Say "Hello from Grok" and nothing else.',
-      });
-      return result.text.includes('Grok') || result.text.includes('Hello');
-    },
-  },
-  {
-    key: 'groq/llama-4-maverick',
-    displayName: 'Llama 4 Maverick (via Groq)',
-    configKey: 'groqApiKey',
-    testFn: async (config) => {
-      const groq = createGroq({ apiKey: config.groqApiKey });
-      const result = await generateText({
-        model: groq('meta-llama/llama-4-maverick-17b-128e-instruct'),
-        prompt: 'Say "Hello from Llama" and nothing else.',
-      });
-      return result.text.includes('Llama') || result.text.includes('Hello');
-    },
-  },
-];
+/**
+ * Tests a single model and returns success status
+ */
+async function testModel(modelConfig: ModelConfig, modelId: string): Promise<boolean> {
+  if (!modelConfig.apiKey) {
+    throw new Error('API key not configured');
+  }
 
-async function testSingleProvider(providerKey: string) {
-  console.log(chalk.bold(`\n🧠 Testing Provider: ${providerKey}\n`));
+  const client = createProviderClient(modelConfig.provider, modelConfig.apiKey);
+  const result = await generateText({
+    model: client(modelId),
+    prompt: `Say "Hello from ${modelConfig.name}" and nothing else.`,
+  });
 
-  const config = loadConfig();
-  const providerTest = PROVIDER_TESTS.find((p) => p.key === providerKey);
+  return result.text.includes('Hello') || result.text.toLowerCase().includes('hello');
+}
 
-  if (!providerTest) {
-    console.error(chalk.red(`\n❌ Unknown provider: ${providerKey}\n`));
+interface TestResult {
+  name: string;
+  success: boolean;
+  modelUsed?: string;
+  error?: string;
+  skipped?: boolean;
+}
+
+async function testSingleProvider(providerName: string) {
+  console.log(chalk.bold(`\n🧠 Testing Provider: ${providerName}\n`));
+
+  const modelConfig = COUNCIL_MODELS.find(
+    (m) => m.name.toLowerCase() === providerName.toLowerCase()
+  );
+
+  if (!modelConfig) {
+    console.error(chalk.red(`\n❌ Unknown provider: ${providerName}\n`));
     console.log(chalk.bold('Available providers:'));
-    PROVIDER_TESTS.forEach((p) => {
-      console.log(chalk.gray(`  - ${p.key} (${p.displayName})`));
+    COUNCIL_MODELS.forEach((m) => {
+      console.log(chalk.gray(`  - ${m.name}`));
     });
     console.log();
     process.exit(1);
   }
 
   // Check if API key is configured
-  const apiKey = config[providerTest.configKey];
-  if (!apiKey) {
-    console.error(chalk.red(`\n❌ Missing API key for ${providerTest.displayName}\n`));
+  if (!modelConfig.apiKey) {
+    console.error(chalk.red(`\n❌ Missing API key for ${modelConfig.name}\n`));
     console.log(
       chalk.yellow(
         `Please add the required API key to your .env file and try again.\n` +
@@ -129,30 +104,38 @@ async function testSingleProvider(providerKey: string) {
     process.exit(1);
   }
 
-  const spinner = ora(`Testing ${providerTest.displayName}...`).start();
+  const spinner = ora(`Testing ${modelConfig.name}...`).start();
 
-  try {
-    const success = await providerTest.testFn(config);
-    if (success) {
-      spinner.succeed(chalk.green(`${providerTest.displayName} connected successfully`));
-      console.log(chalk.green('\n✨ Provider is ready!\n'));
-    } else {
-      spinner.fail(chalk.red(`${providerTest.displayName} failed (unexpected response)`));
-      console.log(chalk.red('\n❌ Provider test failed\n'));
-      process.exit(1);
+  // Try each model in order (primary first, then fallbacks)
+  let lastError: Error | null = null;
+  for (const modelId of modelConfig.models) {
+    try {
+      const success = await testModel(modelConfig, modelId);
+      if (success) {
+        const modelInfo =
+          modelConfig.models.length > 1 && modelId !== modelConfig.models[0]
+            ? ` (using ${modelId})`
+            : '';
+        spinner.succeed(chalk.green(`${modelConfig.name} connected${modelInfo}`));
+        console.log(chalk.green('\n✨ Provider is ready!\n'));
+        return;
+      }
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+      // Continue to next model
     }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    spinner.fail(chalk.red(`${providerTest.displayName} failed`));
-    console.log(chalk.red(`\nError: ${errorMessage}\n`));
-    process.exit(1);
   }
+
+  // All models failed
+  const errorMessage = lastError?.message || 'All models failed';
+  spinner.fail(chalk.red(`${modelConfig.name} failed`));
+  console.log(chalk.red(`\nError: ${errorMessage}\n`));
+  process.exit(1);
 }
 
 async function testProviders() {
   console.log(chalk.bold('\n🧠 Testing Second Brain Provider Connectivity\n'));
 
-  const config = loadConfig();
   const missingKeys = getMissingApiKeys();
 
   // Show warnings for missing API keys
@@ -164,23 +147,56 @@ async function testProviders() {
     console.log(chalk.gray('\nThese providers will be skipped.\n'));
   }
 
-  const results: Array<{ name: string; success: boolean; error?: string; skipped?: boolean }> = [];
+  const results: TestResult[] = [];
 
-  // Test providers that have API keys
-  for (const providerTest of PROVIDER_TESTS) {
-    const apiKey = config[providerTest.configKey];
-
-    if (!apiKey) {
+  // Test each model config
+  for (const modelConfig of COUNCIL_MODELS) {
+    if (!modelConfig.apiKey) {
       // Skip this provider
       results.push({
-        name: providerTest.displayName,
+        name: modelConfig.name,
         success: false,
         skipped: true,
         error: 'API key not configured',
       });
-    } else {
-      // Test this provider
-      await testProvider(providerTest.displayName, () => providerTest.testFn(config), results);
+      continue;
+    }
+
+    // Try models in order (primary first, then fallbacks)
+    const spinner = ora(`Testing ${modelConfig.name}...`).start();
+    let succeeded = false;
+    let lastError: string | null = null;
+
+    for (const modelId of modelConfig.models) {
+      try {
+        const success = await testModel(modelConfig, modelId);
+        if (success) {
+          const modelInfo =
+            modelConfig.models.length > 1 && modelId !== modelConfig.models[0]
+              ? ` (using ${modelId})`
+              : '';
+          spinner.succeed(chalk.green(`${modelConfig.name} connected${modelInfo}`));
+          results.push({
+            name: modelConfig.name,
+            success: true,
+            modelUsed: modelId,
+          });
+          succeeded = true;
+          break;
+        }
+      } catch (error) {
+        lastError = error instanceof Error ? error.message : 'Unknown error';
+        // Continue to next model
+      }
+    }
+
+    if (!succeeded) {
+      spinner.fail(chalk.red(`${modelConfig.name} failed`));
+      results.push({
+        name: modelConfig.name,
+        success: false,
+        error: lastError || 'All models failed',
+      });
     }
   }
 
@@ -198,8 +214,9 @@ async function testProviders() {
       console.log(`${icon} ${result.name}: ${status}`);
     } else {
       const icon = result.success ? chalk.green('✓') : chalk.red('✗');
+      const modelInfo = result.modelUsed ? chalk.gray(` (${result.modelUsed})`) : '';
       const status = result.success ? chalk.green('Connected') : chalk.red('Failed');
-      console.log(`${icon} ${result.name}: ${status}`);
+      console.log(`${icon} ${result.name}: ${status}${modelInfo}`);
       if (!result.success && result.error) {
         console.log(chalk.gray(`  Error: ${result.error}`));
       }
@@ -230,29 +247,6 @@ async function testProviders() {
     );
   } else {
     console.log(chalk.green('✨ All providers are ready!\n'));
-  }
-}
-
-async function testProvider(
-  name: string,
-  testFn: () => Promise<boolean>,
-  results: Array<{ name: string; success: boolean; error?: string }>
-) {
-  const spinner = ora(`Testing ${name}...`).start();
-
-  try {
-    const success = await testFn();
-    if (success) {
-      spinner.succeed(chalk.green(`${name} connected`));
-      results.push({ name, success: true });
-    } else {
-      spinner.fail(chalk.red(`${name} failed (unexpected response)`));
-      results.push({ name, success: false, error: 'Unexpected response from provider' });
-    }
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    spinner.fail(chalk.red(`${name} failed`));
-    results.push({ name, success: false, error: errorMessage });
   }
 }
 

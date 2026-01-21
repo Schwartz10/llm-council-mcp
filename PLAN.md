@@ -38,7 +38,7 @@ User → CLI → Personal Brain (Claude Sonnet) → Council (4 models in paralle
 - `tsconfig.json` - strict mode, ES modules
 - `.env.example` - template for API keys
 - `src/index.ts` - CLI entry point
-- `src/config.ts` - load env vars, validate API keys present
+- `src/config.ts` - load env vars, validate API keys, define council model configurations with fallback support
 
 **Tasks:**
 - [x] Initialize npm project with TypeScript
@@ -82,10 +82,17 @@ User → CLI → Personal Brain (Claude Sonnet) → Council (4 models in paralle
     - Added npm scripts: `lint`, `lint:fix`, `format`, `format:check`
   - **Added `.gitignore`** to exclude node_modules, .env files, and build artifacts
   - **Updated `.claude/settings.json`** to block reading .env files (security best practice)
+  - **Added model configuration to `src/config.ts`** - Single source of truth for all configurations (env vars + council models)
+    - Exported `COUNCIL_MODELS` array with user-editable defaults
+    - Each provider has array of models (primary + fallbacks)
+    - Models tried in order until one succeeds
+    - Test output shows which specific model connected (e.g., "GPT (using gpt-4o)")
+    - Enables graceful degradation when primary models require special access
+    - Cleaner architecture: all config in one file instead of split across config.ts and model-config.ts
   - Verified with `npx tsc --noEmit` - no build errors
   - Verified with `npm run lint` - no linting errors
   - **Tested live:** Successfully ran `npm run test:provider -- anthropic/claude-sonnet-4-5` and `npm run test:provider -- xai/grok-beta` with valid API keys
-  - **Final test:** 3/4 providers connected (Claude ✓, Grok ✓, Llama 4 Maverick ✓; GPT-5.2 requires org verification)
+  - **Final test:** 4/4 providers connected! (Claude ✓, GPT ✓ [using gpt-4o fallback], Grok ✓, Llama 4 Maverick ✓)
 
 **Verification:** Run `npm run test:providers` and see configured providers tested (missing API keys show warnings and are skipped).
 

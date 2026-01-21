@@ -44,6 +44,29 @@ Required API keys:
 - `XAI_API_KEY` - Get from [xAI Console](https://console.x.ai/)
 - `GROQ_API_KEY` - Get from [Groq Console](https://console.groq.com/)
 
+## Model Configuration
+
+The council models are configured in `src/config.ts` via the `COUNCIL_MODELS` array. This configuration defines:
+- Which models to use for each provider
+- Primary and fallback models (tried in order)
+- API keys from environment variables
+
+You can edit the `COUNCIL_MODELS` array in `src/config.ts` to customize which models the council uses. Models are tried in order - if the primary fails, the system automatically falls back to the next one.
+
+Example:
+```typescript
+{
+  name: 'GPT',
+  provider: 'openai',
+  apiKey: env.openaiApiKey,
+  models: [
+    'gpt-5.2',      // Primary (requires org verification)
+    'gpt-4o',       // Fallback 1 (widely available)
+    'gpt-4-turbo'   // Fallback 2
+  ]
+}
+```
+
 ## Usage
 
 ### Test All Providers
@@ -54,7 +77,7 @@ Verify that all 4 AI providers are configured correctly:
 npm run test:providers
 ```
 
-This will test connectivity to all providers and show you which ones are working.
+This will test connectivity to all providers, automatically trying fallback models if primary ones fail. The output shows which specific model connected (e.g., "GPT: Connected (using gpt-4o)").
 
 ### Test Individual Provider
 
@@ -65,17 +88,17 @@ npm run test:provider -- <provider-key>
 ```
 
 Available providers:
-- `anthropic/claude-sonnet-4-5` - Claude Sonnet 4.5
-- `openai/gpt-5-2` - GPT-5.2
-- `xai/grok-beta` - Grok
-- `groq/llama-4-maverick` - Llama 4 Maverick (via Groq)
+- `Claude Sonnet 4.5`
+- `GPT`
+- `Grok`
+- `Llama 4 Maverick`
 
 Example:
 ```bash
-npm run test:provider -- anthropic/claude-sonnet-4-5
+npm run test:provider -- "GPT"
 ```
 
-**Note:** The `--` is required to pass arguments to the script.
+**Note:** The `--` is required to pass arguments to the script. Provider names are case-insensitive.
 
 ### Ask a Question (Coming Soon)
 
@@ -93,7 +116,7 @@ npm run ask "What is the best programming language for systems programming?"
 second-brain/
 ├── src/
 │   ├── index.ts         # CLI entry point
-│   ├── config.ts        # Configuration loader
+│   ├── config.ts        # Configuration: env vars + council model configs
 │   ├── providers/       # Provider abstraction layer (Phase 2)
 │   ├── council/         # Parallel querying module (Phase 3)
 │   ├── consensus/       # Synthesis module (Phase 4)
