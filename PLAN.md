@@ -138,15 +138,45 @@ interface ProviderResponse {
 ```
 
 **Tasks:**
-1. Define Provider interface with `query()` and `queryStream()` methods
-2. Create provider directory structure (anthropic/, openai/, xai/, groq/)
-3. Implement shared logic in each provider's index.ts
-4. Implement model-specific wrappers for all 4 models
-5. Each wrapper should handle errors gracefully and return structured response
-6. Add latency tracking to each query
-7. Export all model implementations from `src/providers/index.ts`
+- [x] Define Provider interface with `query()` and `queryStream()` methods
+  - Created `src/providers/types.ts` with Provider interface and ProviderResponse type
+- [x] Create provider directory structure (anthropic/, openai/, xai/, groq/)
+  - Used simplified structure: each provider has only `index.ts` (no separate model files)
+  - **Architecture decision:** Made providers model-agnostic - they accept modelId as constructor parameter
+  - This simplifies the code and makes it easier to test fallback models
+- [x] Implement shared logic in each provider's index.ts
+  - Each provider class handles API client setup, error handling, and latency tracking
+  - All providers use Vercel AI SDK (`generateText` and `streamText`)
+- [x] Implement model-specific wrappers for all 4 models
+  - Created AnthropicProvider, OpenAIProvider, XAIProvider, and GroqProvider
+  - Each provider is model-agnostic and receives modelId in constructor
+- [x] Each wrapper should handle errors gracefully and return structured response
+  - Added try-catch blocks with descriptive error messages
+  - Enhanced error messages include latency information
+- [x] Add latency tracking to each query
+  - All providers track start/end time and include latencyMs in response
+- [x] Export all model implementations from `src/providers/index.ts`
+  - Created factory functions: `createCouncilProviders()` and `createProviderWithFallback()`
+  - `createCouncilProviders()` creates providers for all configured models
+  - `createProviderWithFallback()` tries models in order until one succeeds
+- [x] Set up test infrastructure
+  - Installed Vitest as testing framework
+  - Created `vitest.config.ts` with 30s timeout for API calls
+  - Added `npm run test` and `npm run test:watch` scripts
+- [x] Write unit tests for each provider
+  - Created `src/providers/test-helpers.ts` with test configuration
+  - Used cheaper/faster models for testing (e.g., gpt-4o-mini, claude-sonnet-4-5-20250929)
+  - Wrote concise tests for each provider: creation, query, and error handling
+  - All 14 tests passing (5 test files)
+- [x] Implement queryStream() for all providers
+  - Used Vercel AI SDK's `streamText` function
+  - Streams text chunks as they arrive for real-time UI updates
+- [x] Final verification
+  - ✓ Build check: `npx tsc --noEmit` - no errors
+  - ✓ Linter: `npm run lint` - no errors
+  - ✓ Tests: `npm run test` - 14/14 tests passing
 
-**Verification:** Unit test each provider wrapper individually.
+**Verification:** ✅ All provider tests passing (14/14). Each provider can query successfully and return structured responses.
 
 ---
 
