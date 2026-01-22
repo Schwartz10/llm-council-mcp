@@ -83,7 +83,7 @@ export async function handleAskCommand(question: string): Promise<void> {
 
     // Step 3: Initialize Council with all available providers
     const councilSpinner = new ProgressSpinner('Initializing Council of AI models...');
-    const councilProviders = createCouncilProviders();
+    const councilProviders = await createCouncilProviders();
 
     if (councilProviders.length === 0) {
       councilSpinner.fail(chalk.red('No Council providers available'));

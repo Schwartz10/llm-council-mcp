@@ -35,12 +35,12 @@ function createProvider(
 /**
  * Creates providers for all configured council models
  * Skips models with missing API keys
- * Uses the PRIMARY model from each config (first in the models array)
+ * Uses fallback support - tries each model in order until one succeeds
  *
- * Note: Fallback logic (trying secondary models if primary fails) will be
- * implemented at the Council level, not here.
+ * This ensures that if a primary model (like gpt-5.2) requires special access,
+ * we automatically fall back to more widely available models (like gpt-4o).
  */
-export function createCouncilProviders(): Provider[] {
+export async function createCouncilProviders(): Promise<Provider[]> {
   const providers: Provider[] = [];
 
   for (const config of COUNCIL_MODELS) {
@@ -56,16 +56,13 @@ export function createCouncilProviders(): Provider[] {
       continue;
     }
 
-    // Use the primary model (first in the array)
-    const primaryModel = config.models[0];
+    // Try to create provider with fallback support
+    const provider = await createProviderWithFallback(config);
 
-    try {
-      const provider = createProvider(config.provider, config.apiKey, primaryModel, config.name);
+    if (provider) {
       providers.push(provider);
-    } catch (error) {
-      console.error(
-        `❌ Failed to create provider for ${config.name}: ${error instanceof Error ? error.message : String(error)}`
-      );
+    } else {
+      console.warn(`⚠️  All models failed for ${config.name}`);
     }
   }
 
