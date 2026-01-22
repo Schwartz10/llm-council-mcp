@@ -1,5 +1,6 @@
 import type { BrainConfig } from './types.js';
-import { getPreProcessingPrompt } from './prompts.js';
+import type { ConsensusResult } from '../consensus/types.js';
+import { getPreProcessingPrompt, getPostProcessingPrompt } from './prompts.js';
 
 /**
  * Personal Brain
@@ -74,5 +75,52 @@ export class Brain {
    */
   getProviderName(): string {
     return this.config.provider.name;
+  }
+
+  /**
+   * Post-processes a ConsensusResult to format the final response for the user
+   *
+   * Takes the consensus synthesis and formats it into a clear, conversational
+   * response that appropriately conveys confidence level and any dissenting views.
+   *
+   * @param consensus - The consensus result from the Council deliberation
+   * @returns Formatted final response ready to present to the user
+   */
+  async presentToUser(consensus: ConsensusResult): Promise<string> {
+    if (this.config.debug) {
+      console.log('[Brain] Post-processing consensus result');
+      console.log('[Brain] Agreement:', consensus.agreement);
+      console.log('[Brain] Confidence:', consensus.confidence);
+    }
+
+    try {
+      // Get the post-processing prompt
+      const prompt = getPostProcessingPrompt(
+        consensus.synthesis,
+        consensus.agreement,
+        consensus.confidence,
+        consensus.dissent
+      );
+
+      // Query the provider to format the final response
+      const response = await this.config.provider.query(prompt);
+
+      // The response content is the formatted answer for the user
+      const formattedResponse = response.content.trim();
+
+      if (this.config.debug) {
+        console.log('[Brain] Post-processed response length:', formattedResponse.length);
+        console.log(`[Brain] Post-processing took ${response.latencyMs}ms`);
+      }
+
+      return formattedResponse;
+    } catch (error) {
+      // If post-processing fails, fall back to the raw synthesis
+      console.warn(
+        '[Brain] Post-processing failed, using raw synthesis:',
+        error instanceof Error ? error.message : String(error)
+      );
+      return consensus.synthesis;
+    }
   }
 }

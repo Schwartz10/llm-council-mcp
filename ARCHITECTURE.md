@@ -4,7 +4,7 @@
 
 Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of 4 frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
 
-**Status:** Phase 4 Complete (Brain pre-processing + Council parallel querying + Consensus synthesis)
+**Status:** Phase 5 Complete (Brain pre-processing + Council parallel querying + Consensus synthesis + Brain post-processing)
 
 ---
 
@@ -55,15 +55,18 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
 ║                             │                                           ║
 ║                             ▼                                           ║
 ║  ┌─────────────────────────────────────────────────────────────┐       ║
-║  │        POST-PROCESSING (⏳ Phase 5 Not Yet Implemented)      │       ║
+║  │         POST-PROCESSING (✅ Phase 5 Complete)                │       ║
 ║  │                                                              │       ║
-║  │  Files: src/brain/index.ts (to be extended)                 │       ║
+║  │  Files:                                                      │       ║
+║  │   • src/brain/index.ts (presentToUser method)               │       ║
+║  │   • src/brain/prompts.ts (post-processing templates)        │       ║
 ║  │                                                              │       ║
-║  │  Future Responsibilities:                                    │       ║
+║  │  Responsibilities:                                           │       ║
 ║  │   • Format consensus result for user presentation           │       ║
-║  │   • Add confidence indicators                               │       ║
+║  │   • Add confidence indicators (high/moderate/low)           │       ║
 ║  │   • Highlight dissenting opinions                           │       ║
-║  │   • Make response conversational                            │       ║
+║  │   • Make response conversational and cohesive               │       ║
+║  │   • Graceful fallback on failure                            │       ║
 ║  │                                                              │       ║
 ║  │  Method: presentToUser(consensus) → finalResponse           │       ║
 ║  └─────────────────────────────────────────────────────────────┘       ║
@@ -396,12 +399,25 @@ Provider Factory:
         }
         │
         ▼
-8. [NOT YET IMPLEMENTED]
-   Brain.presentToUser() → Final formatted response
+8. Brain.presentToUser(consensus) ✅
+        │
+        ├─> Query provider with post-processing prompt
+        │   ├─> Includes consensus data
+        │   ├─> Includes confidence labels
+        │   ├─> Includes agreement status
+        │   └─> Includes dissent if present
+        │
+        ├─> Format response conversationally
+        │   ├─> Lead with main answer
+        │   ├─> Note confidence appropriately
+        │   └─> Mention alternative viewpoints if relevant
         │
         ▼
-9. [NOT YET IMPLEMENTED]
-   CLI displays to user
+9. Final Formatted Response ✅
+        │
+        ▼
+10. [NOT YET IMPLEMENTED]
+    CLI displays to user
 ```
 
 ---
@@ -424,8 +440,9 @@ Council Level:
 
 Brain Level:
   • Pre-processing failure falls back to original user query
+  • Post-processing failure falls back to raw consensus synthesis
   • Warning logged but processing continues
-  • Post-processing failure (future) will show raw consensus
+  • Graceful degradation ensures user always gets an answer
 
 Config Level:
   • Missing API keys warn but don't error
@@ -478,7 +495,11 @@ Brain Tests (src/brain/brain.test.ts):
   • Test pre-processing with simple query
   • Test pre-processing with ambiguous query
   • Test pre-processing with complex query
-  • Test fallback on failure
+  • Test pre-processing fallback on failure
+  • Test post-processing with high confidence and agreement
+  • Test post-processing with low confidence and dissent
+  • Test post-processing with moderate confidence
+  • Test post-processing fallback on failure
   • Uses real Anthropic API
 
 Council Tests (src/council/council.test.ts):
@@ -492,16 +513,26 @@ Council Tests (src/council/council.test.ts):
 Factory Tests (src/providers/index.test.ts):
   • Test createCouncilProviders()
   • Test provider instantiation
+
+Consensus Tests (src/consensus/consensus.test.ts):
+  • Test consensus orchestrator creation
+  • Test SimpleSynthesis strategy
+  • Test JSON parsing (clean and markdown-wrapped)
+  • Test agreement/disagreement scenarios
+  • Test confidence clamping
+  • Test fallback on synthesis failure
+  • Test strategy switching
 ```
 
 ### Test Coverage
 
 ```
-Total: 27/27 tests passing
-  • 7 test files
+Total: 41/41 tests passing
+  • 8 test files
   • Provider tests: 14 tests
-  • Brain tests: 5 tests
+  • Brain tests: 9 tests (5 pre-processing + 4 post-processing)
   • Council tests: 8 tests
+  • Consensus tests: 10 tests
 
 Build: ✅ No TypeScript errors
 Lint: ✅ No ESLint/Prettier errors
@@ -537,9 +568,9 @@ second-brain/
 │   │       ├── index.ts             [GroqProvider class]
 │   │       └── index.test.ts
 │   │
-│   ├── brain/                       [✅ Personal Brain pre-processing]
+│   ├── brain/                       [✅ Personal Brain pre & post-processing]
 │   │   ├── types.ts                 [BrainConfig, interfaces]
-│   │   ├── prompts.ts               [Pre-processing templates]
+│   │   ├── prompts.ts               [Pre & post-processing templates]
 │   │   ├── index.ts                 [Brain class]
 │   │   └── brain.test.ts
 │   │
@@ -548,11 +579,13 @@ second-brain/
 │   │   ├── index.ts                 [Council class]
 │   │   └── council.test.ts
 │   │
-│   ├── consensus/                   [⏳ Phase 4 - Not implemented]
+│   ├── consensus/                   [✅ Consensus synthesis]
 │   │   ├── index.ts                 [Consensus orchestrator]
 │   │   ├── types.ts                 [ConsensusResult, ConsensusStrategy]
+│   │   ├── prompts.ts               [Synthesis prompt templates]
+│   │   ├── consensus.test.ts
 │   │   └── strategies/
-│   │       └── simple-synthesis.ts  [MVP strategy]
+│   │       └── simple-synthesis.ts  [SimpleSynthesis strategy]
 │   │
 │   ├── cli/                         [⏳ Phase 6 - Not implemented]
 │   │   ├── index.ts                 [CLI commands]
@@ -652,16 +685,14 @@ Development:
 
 ---
 
-## Next Steps (Phase 4+)
+## Next Steps (Phase 6+)
 
-### Phase 4: Consensus Module
-Create synthesis logic to combine 4 Council responses into unified answer.
-
-### Phase 5: Personal Brain Post-Processing
-Format consensus results for user presentation with confidence indicators.
-
-### Phase 6: CLI Interface
+### Phase 6: CLI Interface ⏳
 Build end-to-end CLI with progress UI and markdown formatting.
+- Integrate all modules (Brain → Council → Consensus → Brain)
+- Add `second-brain ask` command
+- Real-time progress spinners
+- Pretty-printed markdown responses
 
 ### Phase 7: API Schema Compatibility
 Expose Second Brain through OpenAI/Anthropic-compatible APIs.
@@ -768,6 +799,6 @@ Each module (Brain, Council, Consensus, Providers) is independent and loosely co
 
 ---
 
-**Document Version:** 1.0
-**Last Updated:** Phase 3 Complete (2025-01-21)
+**Document Version:** 1.1
+**Last Updated:** Phase 5 Complete (2025-01-21)
 **Status:** Active Development
