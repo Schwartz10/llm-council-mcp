@@ -36,7 +36,7 @@ export class OpenAIProvider implements Provider {
     } catch (error) {
       const latencyMs = Date.now() - startTime;
       throw new Error(
-        `OpenAI query failed (${latencyMs}ms): ${error instanceof Error ? error.message : String(error)}`,
+        `OpenAI query failed (${latencyMs}ms): ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -54,7 +54,7 @@ export class OpenAIProvider implements Provider {
       }
     } catch (error) {
       throw new Error(
-        `OpenAI stream failed: ${error instanceof Error ? error.message : String(error)}`,
+        `OpenAI stream failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }

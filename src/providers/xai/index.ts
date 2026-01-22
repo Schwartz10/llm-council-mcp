@@ -36,7 +36,7 @@ export class XAIProvider implements Provider {
     } catch (error) {
       const latencyMs = Date.now() - startTime;
       throw new Error(
-        `xAI query failed (${latencyMs}ms): ${error instanceof Error ? error.message : String(error)}`,
+        `xAI query failed (${latencyMs}ms): ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -54,7 +54,7 @@ export class XAIProvider implements Provider {
       }
     } catch (error) {
       throw new Error(
-        `xAI stream failed: ${error instanceof Error ? error.message : String(error)}`,
+        `xAI stream failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }

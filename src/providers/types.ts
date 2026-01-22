@@ -6,6 +6,7 @@ export interface ProviderResponse {
   provider: string; // Human-readable provider name (e.g., "Claude Sonnet 4.5")
   latencyMs: number; // Time taken to complete the query
   tokensUsed?: number; // Optional token usage information
+  error?: string; // Optional error message if query failed
 }
 
 /**

@@ -14,6 +14,7 @@ export interface Config {
   groqApiKey?: string;
   timeoutMs: number;
   debug: boolean;
+  brainModel: string;
 }
 
 export interface ModelConfig {
@@ -58,6 +59,7 @@ export function loadConfig(): Config {
     groqApiKey: getEnvVar('GROQ_API_KEY'),
     timeoutMs: parseInt(process.env.SECOND_BRAIN_TIMEOUT_MS || '30000', 10),
     debug: process.env.SECOND_BRAIN_DEBUG === 'true',
+    brainModel: getEnvVar('BRAIN_MODEL') || 'anthropic/claude-sonnet-4-5-20250929',
   };
 }
 
@@ -109,3 +111,22 @@ export const COUNCIL_MODELS: ModelConfig[] = [
     ],
   },
 ];
+
+/**
+ * Personal Brain model configuration
+ * The Personal Brain orchestrates the entire flow:
+ * - Pre-processes user queries before sending to Council
+ * - Post-processes consensus results for final user presentation
+ *
+ * Default: Claude Sonnet 4.5 (best performing, cost not a concern for MVP)
+ * Can be overridden via BRAIN_MODEL environment variable
+ */
+export const BRAIN_MODEL_CONFIG: ModelConfig = {
+  name: 'Personal Brain',
+  provider: 'anthropic',
+  apiKey: env.anthropicApiKey,
+  models: [
+    'claude-sonnet-4-5-20250929', // Primary: Latest Sonnet 4.5
+    'claude-sonnet-3-5-20241022', // Fallback: Sonnet 3.5
+  ],
+};

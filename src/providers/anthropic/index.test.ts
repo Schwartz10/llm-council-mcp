@@ -17,7 +17,11 @@ describe('AnthropicProvider', () => {
   it('should query successfully and return ProviderResponse', async () => {
     if (skipIfNoApiKey(apiKeys.anthropic, 'Anthropic')) return;
 
-    const provider = new AnthropicProvider(apiKeys.anthropic!, TEST_MODELS.anthropic, 'Test Claude');
+    const provider = new AnthropicProvider(
+      apiKeys.anthropic!,
+      TEST_MODELS.anthropic,
+      'Test Claude'
+    );
 
     const response = await provider.query(TEST_PROMPT);
 

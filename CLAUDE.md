@@ -8,6 +8,16 @@ This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberatio
 
 **Goal:** Prove Second Brain answers are preferred >60% of the time vs best single model.
 
+**Current Status:** Phase 3 Complete (Brain pre-processing + Council parallel querying)
+
+## Documentation
+
+- **PLAN.md** - Implementation plan with task tracking and progress
+- **ARCHITECTURE.md** - Technical specification with ASCII diagrams, data flows, and architecture details
+- **README.md** - User-facing documentation for installation and usage
+
+**IMPORTANT:** As you complete phases and make architectural changes, update both PLAN.md (task completion) and ARCHITECTURE.md (technical specification).
+
 ## Development Commands
 
 ```bash
@@ -29,23 +39,29 @@ second-brain eval report           # Generate preference stats
 ## Architecture
 
 ```
-User → CLI → Personal Brain (Claude Sonnet) → Second Brain (5 models in parallel) → Consensus Module → Personal Brain (synthesis) → User
+User → CLI → Personal Brain (pre-processing) → Council (4 models in parallel) → Consensus Module → Personal Brain (post-processing) → User
 ```
+
+**See ARCHITECTURE.md for detailed ASCII diagrams and technical specifications.**
 
 ### Tech Stack
 - **Language:** TypeScript/Node.js (single package)
 - **LLM SDKs:** Vercel AI SDK (`@ai-sdk/*`) for unified provider interface
 - **CLI Framework:** Commander.js
+- **Testing:** Vitest
+- **Code Quality:** ESLint + Prettier
 
-### The Four Second Brain Models
-1. Claude Sonnet 4.5 (Anthropic)
-2. GPT-5.2 (OpenAI)
-3. Grok (xAI)
-4. Llama 4 Maverick (via Groq) - `meta-llama/llama-4-maverick-17b-128e-instruct`
+### The Four Council Models
+1. Claude Sonnet 4.5 (Anthropic) - with fallback to Sonnet 3.5
+2. GPT-5.2 (OpenAI) - with fallback to GPT-4o → GPT-4 Turbo
+3. Grok 3 Beta (xAI)
+4. Llama 4 Maverick (via Groq) - `meta-llama/llama-4-maverick-17b-128e-instruct` with fallback to Llama 3.3
 
 ### Personal Brain
-- Default: Claude Sonnet 4.5
+- Default: Claude Sonnet 4.5 (with fallback to Sonnet 3.5)
+- Configurable via `BRAIN_MODEL` environment variable
 - Must be swappable to any Provider (designed for future flexibility)
+- Handles both pre-processing (Phase 3 ✅) and post-processing (Phase 5 ⏳)
 
 ## Code Architecture
 
@@ -91,32 +107,40 @@ interface ProviderResponse {
 }
 ```
 
-**Hierarchical Structure:**
-Each provider has its own directory with shared logic and model-specific implementations:
-- `providers/anthropic/` - Shared Anthropic logic + claude-sonnet-4-5.ts
-- `providers/openai/` - Shared OpenAI logic + gpt-5-2.ts
-- `providers/xai/` - Shared xAI logic + grok.ts
-- `providers/groq/` - Shared Groq logic + llama.ts
+**Implementation (Phase 2 ✅):**
+Each provider has its own directory with a model-agnostic implementation:
+- `providers/anthropic/index.ts` - AnthropicProvider class
+- `providers/openai/index.ts` - OpenAIProvider class
+- `providers/xai/index.ts` - XAIProvider class
+- `providers/groq/index.ts` - GroqProvider class
 
-Each provider's `index.ts` handles:
+Each provider class:
+- Accepts modelId as constructor parameter (model-agnostic design)
 - API client setup via Vercel AI SDK
 - Common error handling and graceful degradation
 - Latency tracking
 - Structured response formatting
+- Supports both `query()` and `queryStream()` methods
 
-Each model-specific file handles:
-- Model ID and parameters
-- Any model-specific configuration
+Factory functions (`src/providers/index.ts`):
+- `createCouncilProviders()` - creates all 4 council providers with fallback support
+- `createProviderWithFallback()` - tries models in order until one succeeds
 
-### Second Brain Module (`src/second-brain/`)
-Orchestrates parallel querying:
+### Council Module (`src/council/`) - Phase 3 ✅
+Orchestrates parallel querying of the 4 Council models:
 - Uses `Promise.allSettled()` to query all 4 providers simultaneously
-- 30s timeout per provider
-- Handles partial failures (continues if 1 model fails)
-- Emits progress events for CLI streaming UI
+- 30s timeout per provider (configurable)
+- Handles partial failures gracefully (continues if providers fail)
+- Emits progress events via callbacks for real-time UI updates
+- Returns `DeliberationResult` with all responses and metadata (latency, success/failure counts)
 
-### Consensus Module (`src/consensus/`)
-Synthesizes multiple responses into one unified answer:
+**Implementation:**
+- `src/council/types.ts` - DeliberationResult and ProgressCallback interfaces
+- `src/council/index.ts` - Council class with `deliberate()` method
+- `src/council/council.test.ts` - 8 comprehensive tests (parallel execution, failures, timeouts, progress)
+
+### Consensus Module (`src/consensus/`) - Phase 4 ⏳
+Synthesizes multiple responses from Council into one unified answer:
 
 ```typescript
 interface ConsensusResult {
@@ -127,7 +151,7 @@ interface ConsensusResult {
 }
 ```
 
-**MVP Strategy:** SimpleSynthesis sends all 4 responses to Personal Brain with a synthesis prompt that:
+**MVP Strategy (to be implemented):** SimpleSynthesis sends all 4 responses to Personal Brain with a synthesis prompt that:
 1. Combines insights from all models
 2. Identifies agreement vs disagreement patterns
 3. Produces confidence level based on consensus
@@ -135,21 +159,41 @@ interface ConsensusResult {
 
 **Extensibility:** New strategies can be added as files in `src/consensus/strategies/`
 
+**Files to create:**
+- `src/consensus/index.ts` - consensus orchestrator
+- `src/consensus/types.ts` - ConsensusResult, ConsensusStrategy interfaces
+- `src/consensus/strategies/simple-synthesis.ts` - MVP strategy
+
 ### Personal Brain (`src/brain/`)
 Two-stage processing:
-1. **Pre-processing:** Clarifies user questions, adds context, formats for Second Brain
-2. **Post-processing:** Takes ConsensusResult, formats final response with confidence indicators and dissent notes
+1. **Pre-processing (Phase 3 ✅):** Clarifies user questions, adds context, formats for Council
+   - Implemented via `prepareForCouncil(userQuery)` method
+   - Falls back to original query on failure
+   - Uses prompt templates from `src/brain/prompts.ts`
+
+2. **Post-processing (Phase 5 ⏳):** Takes ConsensusResult, formats final response with confidence indicators and dissent notes
+   - To be implemented via `presentToUser(consensus)` method
 
 Configurable with any Provider but defaults to Claude Sonnet 4.5.
 
-### CLI Interface (`src/cli/`)
-Uses Commander.js + ora spinners for:
+**Implementation:**
+- `src/brain/types.ts` - BrainConfig interface
+- `src/brain/prompts.ts` - Pre-processing prompt templates
+- `src/brain/index.ts` - Brain class
+- `src/brain/brain.test.ts` - 5 comprehensive tests (simple, ambiguous, complex queries, fallback)
+
+### CLI Interface (`src/cli/`) - Phase 6 ⏳
+To be implemented with Commander.js + ora spinners for:
 - Real-time progress as each model responds
 - Pretty-printed markdown responses
 - Timing information
 - Graceful Ctrl+C handling
 
-### Evaluation Module (`src/eval/`)
+**Files to create:**
+- `src/cli/index.ts` - CLI commands
+- `src/cli/ui.ts` - Terminal UI helpers
+
+### Evaluation Module (`src/eval/`) - Phase 8 ⏳
 **Purpose:** Validate that Second Brain > single model
 
 **Method:**
@@ -160,17 +204,24 @@ Uses Commander.js + ora spinners for:
 
 This module is separate from production code and used only for validation.
 
+**Files to create:**
+- `src/eval/index.ts` - evaluation harness
+- `src/eval/questions.ts` - test question bank
+- `src/eval/compare.ts` - comparison logic
+- `src/eval/report.ts` - generate eval report
+
 ## Environment Variables
 
 Required API keys (see `.env.example`):
-- `ANTHROPIC_API_KEY`
-- `OPENAI_API_KEY`
-- `XAI_API_KEY`
-- `GROQ_API_KEY`
+- `ANTHROPIC_API_KEY` - Anthropic API key for Claude models
+- `OPENAI_API_KEY` - OpenAI API key for GPT models
+- `XAI_API_KEY` - xAI API key for Grok models
+- `GROQ_API_KEY` - Groq API key for Llama models
 
 Optional:
-- `SECOND_BRAIN_TIMEOUT_MS` (default: 30000)
-- `SECOND_BRAIN_DEBUG` (default: false)
+- `BRAIN_MODEL` (default: `anthropic/claude-sonnet-4-5-20250929`) - Personal Brain model identifier
+- `SECOND_BRAIN_TIMEOUT_MS` (default: `30000`) - Timeout in milliseconds per provider
+- `SECOND_BRAIN_DEBUG` (default: `false`) - Enable debug logging
 
 ## Working with PLAN.md
 
@@ -184,7 +235,13 @@ When implementing phases:
 2. **Mark completed tasks:** Check off tasks as you finish them using checkboxes
 3. **Document extra steps:** If you had to do additional work beyond what was planned to complete a task, document those extra steps in PLAN.md under the relevant task
 4. **Keep it testable:** Each task should have clear verification criteria
-5. **Update README.md:** Whenever you add a feature that has implications for how end users interact with the system (new CLI commands, flags, configuration options, etc.), update the README.md with clear documentation and usage examples
+5. **Update ARCHITECTURE.md:** When completing a phase, update ARCHITECTURE.md to:
+   - Add ✅ status indicators for completed modules
+   - Update data flow diagrams if the implementation differs from the plan
+   - Add any new files or components to the file structure diagram
+   - Update performance characteristics if relevant
+   - Document any architectural decisions or changes made during implementation
+6. **Update README.md:** Whenever you add a feature that has implications for how end users interact with the system (new CLI commands, flags, configuration options, etc.), update the README.md with clear documentation and usage examples
 
 **CRITICAL:** Never mark a phase as "finished" if there are build errors, compiler errors, or linter warnings.
 
@@ -198,16 +255,21 @@ Example:
 ```
 
 ### Implementation Order
-Follow phases 1-7 in sequence. Each phase builds on the previous:
-1. Project Setup & Provider Integration
-2. Provider Abstraction Layer
-3. Second Brain Module (Parallel Querying)
-4. Consensus Module
-5. Personal Brain Module
-6. CLI Interface
-7. Evaluation Module
+Follow phases 1-8 in sequence. Each phase builds on the previous:
 
-Phases 1-6 are the MVP. Phase 7 validates the hypothesis.
+**Completed:**
+1. ✅ Project Setup & Provider Integration (Phase 1)
+2. ✅ Provider Abstraction Layer (Phase 2)
+3. ✅ Personal Brain Pre-processing + Council Module (Phase 3)
+
+**Remaining:**
+4. ⏳ Consensus Module (Phase 4)
+5. ⏳ Personal Brain Post-processing (Phase 5)
+6. ⏳ CLI Interface (Phase 6)
+7. ⏳ API Schema Compatibility - OpenAI/Anthropic formats (Phase 7)
+8. ⏳ Evaluation Module (Phase 8)
+
+Phases 1-6 are the MVP. Phases 7-8 add extensibility and validation.
 
 ## Key Design Principles
 

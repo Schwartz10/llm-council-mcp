@@ -66,7 +66,7 @@ export class AnthropicProvider implements Provider {
       }
     } catch (error) {
       throw new Error(
-        `Anthropic stream failed: ${error instanceof Error ? error.message : String(error)}`,
+        `Anthropic stream failed: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
