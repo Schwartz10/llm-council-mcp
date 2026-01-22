@@ -4,7 +4,7 @@
 
 Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of 4 frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
 
-**Status:** Phase 5 Complete (Brain pre-processing + Council parallel querying + Consensus synthesis + Brain post-processing)
+**Status:** Phase 6 Complete - MVP READY (Full end-to-end CLI with all modules integrated)
 
 ---
 
@@ -19,12 +19,13 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
                                  ▼
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                          CLI INTERFACE                                   │
-│                      [NOT YET IMPLEMENTED]                               │
+│                        ✅ Phase 6 Complete                              │
 │                                                                          │
-│  Files: src/cli/index.ts, src/cli/ui.ts                                 │
-│  - Command parsing (Commander.js)                                       │
-│  - Progress UI (ora spinners)                                           │
-│  - Response formatting                                                  │
+│  Files: src/cli/index.ts, src/cli/ui.ts, src/index.ts                  │
+│  - Command parsing (Commander.js) - "ask" command                       │
+│  - Progress UI (ora spinners) with real-time updates                   │
+│  - Response formatting with confidence bars                             │
+│  - Timing information and error handling                                │
 └────────────────────────────────┬────────────────────────────────────────┘
                                  │
                                  ▼
@@ -342,7 +343,98 @@ Provider Factory:
 
 ---
 
-## Data Flow (Current Implementation)
+## CLI Interface (✅ Phase 6 Complete)
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                         CLI ARCHITECTURE                                │
+│                                                                         │
+│  User-Facing Interface for Second Brain                                │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐     │
+│  │                    Commands                                   │     │
+│  │                                                               │     │
+│  │  $ second-brain ask "<question>"                              │     │
+│  │    → Full Second Brain deliberation flow                      │     │
+│  │    → Real-time progress indicators                            │     │
+│  │    → Formatted response with confidence                       │     │
+│  │                                                               │     │
+│  │  $ second-brain --test-providers                              │     │
+│  │    → Test all 4 Council providers                             │     │
+│  │    → Show connectivity status                                 │     │
+│  │                                                               │     │
+│  │  $ second-brain --test-provider <name>                        │     │
+│  │    → Test specific provider                                   │     │
+│  │                                                               │     │
+│  │  $ second-brain --version                                     │     │
+│  │    → Show version information                                 │     │
+│  └───────────────────────────────────────────────────────────────┘     │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐     │
+│  │              Main Flow (handleAskCommand)                     │     │
+│  │                                                               │     │
+│  │  File: src/cli/index.ts                                       │     │
+│  │                                                               │     │
+│  │  async function handleAskCommand(question: string) {          │     │
+│  │    1. Validate input and API keys                            │     │
+│  │    2. Initialize Personal Brain (with fallback)              │     │
+│  │    3. Pre-process question                                   │     │
+│  │    4. Initialize Council (all available providers)           │     │
+│  │    5. Deliberate with progress callbacks                     │     │
+│  │    6. Synthesize consensus                                   │     │
+│  │    7. Post-process with Brain                                │     │
+│  │    8. Format and display result                              │     │
+│  │    9. Show timing information                                │     │
+│  │  }                                                            │     │
+│  └───────────────────────────────────────────────────────────────┘     │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐     │
+│  │                 UI Utilities (src/cli/ui.ts)                  │     │
+│  │                                                               │     │
+│  │  • ProgressSpinner - ora-based spinners                       │     │
+│  │    - update(message) - update spinner text                    │     │
+│  │    - succeed(message) - mark success                          │     │
+│  │    - fail(message) - mark failure                             │     │
+│  │    - warn(message) - show warning                             │     │
+│  │                                                               │     │
+│  │  • formatFinalResponse(response, confidence)                  │     │
+│  │    - Visual confidence bar (█████░░░░░)                       │     │
+│  │    - Colored confidence label                                 │     │
+│  │    - Formatted response text                                  │     │
+│  │                                                               │     │
+│  │  • formatTiming(totalMs) - display elapsed time               │     │
+│  │  • formatError(error) - format error messages                 │     │
+│  │  • showHeader/Success/Warning/Error - status messages         │     │
+│  └───────────────────────────────────────────────────────────────┘     │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────┐     │
+│  │                    UX Features                                │     │
+│  │                                                               │     │
+│  │  ✅ Real-time progress updates                                │     │
+│  │     - Show as each Council member responds                    │     │
+│  │     - Success (✓) and failure (✗) indicators                  │     │
+│  │     - Completion counter (e.g., "2/4 completed")              │     │
+│  │                                                               │     │
+│  │  ✅ Confidence visualization                                  │     │
+│  │     - Color-coded: green (high), yellow (mod), red (low)      │     │
+│  │     - Visual bar: ██████████ (0.0 - 1.0)                      │     │
+│  │     - Numeric value displayed                                 │     │
+│  │                                                               │     │
+│  │  ✅ Error handling                                            │     │
+│  │     - Graceful provider failures                              │     │
+│  │     - Missing API key warnings                                │     │
+│  │     - Clear error messages with context                       │     │
+│  │                                                               │     │
+│  │  ✅ Timing information                                        │     │
+│  │     - Total deliberation time                                 │     │
+│  │     - Displayed in seconds (e.g., "57.5s")                    │     │
+│  └───────────────────────────────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Data Flow (Full Implementation)
 
 ```
 1. User Question (raw input)
@@ -416,8 +508,15 @@ Provider Factory:
 9. Final Formatted Response ✅
         │
         ▼
-10. [NOT YET IMPLEMENTED]
-    CLI displays to user
+10. CLI Display ✅
+        │
+        ├─> formatFinalResponse()
+        │   ├─> Add visual confidence bar
+        │   ├─> Format with colored output
+        │   └─> Display timing information
+        │
+        ▼
+    User sees formatted answer with confidence indicator
 ```
 
 ---
@@ -587,9 +686,9 @@ second-brain/
 │   │   └── strategies/
 │   │       └── simple-synthesis.ts  [SimpleSynthesis strategy]
 │   │
-│   ├── cli/                         [⏳ Phase 6 - Not implemented]
-│   │   ├── index.ts                 [CLI commands]
-│   │   └── ui.ts                    [Terminal UI helpers]
+│   ├── cli/                         [✅ CLI Interface]
+│   │   ├── index.ts                 [handleAskCommand orchestration]
+│   │   └── ui.ts                    [ProgressSpinner, formatting utilities]
 │   │
 │   ├── api/                         [⏳ Phase 7 - Not implemented]
 │   │   ├── index.ts                 [API adapter/middleware]
@@ -685,14 +784,17 @@ Development:
 
 ---
 
-## Next Steps (Phase 6+)
+## Next Steps (Phase 7+)
 
-### Phase 6: CLI Interface ⏳
-Build end-to-end CLI with progress UI and markdown formatting.
-- Integrate all modules (Brain → Council → Consensus → Brain)
-- Add `second-brain ask` command
-- Real-time progress spinners
-- Pretty-printed markdown responses
+**MVP Complete!** Phases 1-6 are fully implemented. Second Brain can now:
+- Accept user questions via CLI (`second-brain ask "question"`)
+- Pre-process with Personal Brain
+- Query 4 AI models in parallel (Council)
+- Synthesize consensus from responses
+- Post-process and format final answer
+- Display with confidence indicators and timing
+
+Remaining phases add extended features and validation:
 
 ### Phase 7: API Schema Compatibility
 Expose Second Brain through OpenAI/Anthropic-compatible APIs.
@@ -799,6 +901,6 @@ Each module (Brain, Council, Consensus, Providers) is independent and loosely co
 
 ---
 
-**Document Version:** 1.1
-**Last Updated:** Phase 5 Complete (2025-01-21)
-**Status:** Active Development
+**Document Version:** 1.2
+**Last Updated:** Phase 6 Complete - MVP READY (2025-01-21)
+**Status:** MVP Complete - Extended Features In Progress

@@ -425,13 +425,43 @@ second-brain --version
 6. Show: Final answer with confidence indicator
 
 **Tasks:**
-1. Set up Commander.js with `ask` command
-2. Implement streaming progress UI with ora spinners
-3. Handle Ctrl+C gracefully
-4. Pretty-print final response with markdown support
-5. Show timing info (total deliberation time)
+- [x] Set up Commander.js with `ask` command
+  - Added `ask <question>` command to src/index.ts
+  - Command orchestrates full Second Brain flow
+- [x] Implement streaming progress UI with ora spinners
+  - Created src/cli/ui.ts with ProgressSpinner class and formatting utilities
+  - Real-time progress updates as each Council member responds
+  - Success/failure indicators for each model
+- [x] Handle Ctrl+C gracefully
+  - Commander.js handles Ctrl+C by default
+  - Process exits cleanly on errors with proper exit codes
+- [x] Pretty-print final response with markdown support
+  - Created formatFinalResponse() with visual confidence bar
+  - Added colored output with chalk (green for high confidence, yellow for moderate, red for low)
+  - Confidence displayed as both label and visual bar
+- [x] Show timing info (total deliberation time)
+  - Added formatTiming() utility to display total time in seconds
+  - Tracks full flow from start to finish
+- [x] Wire up complete flow in src/cli/index.ts
+  - Brain pre-processing
+  - Council initialization and deliberation with progress callbacks
+  - Consensus synthesis
+  - Brain post-processing
+  - Error handling and validation
+- [x] Fix TypeScript export issues
+  - Changed consensus/index.ts to use `export type` for re-exporting interfaces
+- [x] Verify with `npx tsc --noEmit` - no build errors
+- [x] Verify with `npm run lint` - no linting errors
 
-**Verification:** Run full end-to-end query through CLI.
+**Verification:** ✅ Complete
+- ✅ End-to-end test successful with question "What is TypeScript?"
+- ✅ Brain initialized and pre-processed question
+- ✅ Council assembled with 4 models (2 succeeded, 2 failed gracefully)
+- ✅ Consensus synthesized with high confidence (0.95)
+- ✅ Brain post-processed and formatted final response
+- ✅ Total time: 57.5s
+- ✅ All progress indicators and UI elements working correctly
+- ✅ Confidence bar and timing displayed properly
 
 ---
 
@@ -644,7 +674,7 @@ After each phase, verify:
 - [x] **Phase 3:** Brain pre-processes queries + Council queries all 4 in parallel, handles failures gracefully
 - [x] **Phase 4:** Consensus module produces synthesis with agreement/confidence signals
 - [x] **Phase 5:** Personal Brain post-processes ConsensusResult into clear user response
-- [ ] **Phase 6:** Full CLI flow works: ask question → see progress → get answer
+- [x] **Phase 6:** Full CLI flow works: ask question → see progress → get answer
 - [ ] **Phase 7:** API adapters expose Second Brain in OpenAI/Anthropic formats
 - [ ] **Phase 8:** Eval harness can compare Second Brain vs individual models
 

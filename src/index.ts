@@ -9,6 +9,7 @@ import { createGroq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
 import chalk from 'chalk';
 import ora from 'ora';
+import { handleAskCommand } from './cli/index.js';
 
 interface CliOptions {
   testProviders?: boolean;
@@ -19,6 +20,15 @@ const program = new Command();
 
 program.name('second-brain').description('Multi-model AI deliberation CLI tool').version('1.0.0');
 
+// Main command: ask a question to Second Brain
+program
+  .command('ask <question>')
+  .description('Ask a question to Second Brain (Council of 4 AI models)')
+  .action(async (question: string) => {
+    await handleAskCommand(question);
+  });
+
+// Test commands
 program
   .option('--test-providers', 'Test connectivity to all AI providers')
   .option('--test-provider <provider>', 'Test connectivity to a specific provider (e.g., "GPT")')

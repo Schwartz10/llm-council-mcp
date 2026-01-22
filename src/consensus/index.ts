@@ -61,5 +61,5 @@ export class Consensus {
 }
 
 // Re-export types and strategy for convenience
-export { ConsensusResult, ConsensusStrategy } from './types.js';
+export type { ConsensusResult, ConsensusStrategy } from './types.js';
 export { SimpleSynthesis } from './strategies/simple-synthesis.js';
