@@ -1,23 +1,44 @@
-# Second Brain
+# Second Brain - Council Daemon Service
 
-A CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a "Personal Brain" (Claude Sonnet 4.5), which escalates to 4 frontier models deliberating in parallel, then synthesizes a unified response.
+A daemon service that provides parallel consultation with 4 frontier AI models. Multiple clients (CLI, Claude Code via MCP, or custom tools) can consult the Council when they need alternative perspectives, critiques, or help getting unstuck.
 
-**Hypothesis:** Second Brain answers will be preferred >60% of the time vs the best single model.
+**Primary Use Case:** "Phone a Friend" - when an AI agent (like Claude Code) is uncertain or stuck, it can consult the Council for independent perspectives from multiple models.
 
 ## Architecture
 
 ```
-User → CLI → Personal Brain → Second Brain (4 models in parallel) → Consensus Module → Personal Brain (synthesis) → User
+┌─────────────────────────────────────────────────────┐
+│              CLIENT LAYER                           │
+│  ┌──────────┐  ┌──────────┐  ┌──────────┐         │
+│  │   CLI    │  │  Claude  │  │  Other   │         │
+│  │          │  │   Code   │  │ Clients  │         │
+│  └────┬─────┘  └────┬─────┘  └────┬─────┘         │
+└───────┼─────────────┼─────────────┼───────────────┘
+        │             │             │
+        └─────────────┼─────────────┘
+                      ▼
+┌─────────────────────────────────────────────────────┐
+│         COUNCIL DAEMON (Express Server)             │
+│              localhost:3000                         │
+│                                                     │
+│  Endpoints:                                         │
+│  • POST /mcp - MCP over streamable HTTP            │
+│  • GET /health - Health check                      │
+│                                                     │
+│  Council: 4 models query in parallel               │
+└─────────────────────────────────────────────────────┘
 ```
 
-### The Four Models
+### The Council
 
-Second Brain consults these frontier models in parallel:
+The Council consists of 4 frontier AI models that provide independent critiques:
 
-1. **Claude Sonnet 4.5** (Anthropic)
-2. **GPT-5.2** (OpenAI)
-3. **Grok** (xAI)
-4. **Llama 4 Maverick** (via Groq)
+1. **Claude Sonnet 4.5** (Anthropic) - with fallback to Sonnet 3.5
+2. **GPT-5.2 / GPT-4o** (OpenAI) - with automatic fallback chain
+3. **Grok 3 Beta** (xAI)
+4. **Llama 4 Maverick** (Groq) - with fallback to Llama 3.3
+
+All models are queried in parallel. If individual models fail, the Council continues with remaining models.
 
 ## Installation
 
@@ -38,22 +59,95 @@ cp .env.example .env
 # Edit .env and add your API keys
 ```
 
-Required API keys:
+Required API keys (you need at least one):
 - `ANTHROPIC_API_KEY` - Get from [Anthropic Console](https://console.anthropic.com/)
 - `OPENAI_API_KEY` - Get from [OpenAI Platform](https://platform.openai.com/)
 - `XAI_API_KEY` - Get from [xAI Console](https://console.x.ai/)
 - `GROQ_API_KEY` - Get from [Groq Console](https://console.groq.com/)
 
+4. Build the project:
+```bash
+npm run build
+```
+
+## Quick Start
+
+### 1. Start the Council Server
+
+```bash
+npm run server
+```
+
+The server will start on http://localhost:3000 by default.
+
+### 2. Consult the Council via CLI
+
+In a new terminal:
+
+```bash
+second-brain ask "What is the best way to handle errors in TypeScript?"
+```
+
+The CLI will:
+1. Connect to the Council server
+2. Send your question to all 4 models in parallel
+3. Display independent responses from each model
+4. Show timing and success metrics
+
+### 3. Integrate with Claude Code
+
+See [docs/MCP_SETUP.md](./docs/MCP_SETUP.md) for instructions on integrating with Claude Code.
+
+Once configured, Claude Code can consult the Council directly when working on your code.
+
+## Usage
+
+### Server Commands
+
+```bash
+# Start server (development mode with auto-reload)
+npm run server
+
+# Start server (production mode, requires build first)
+npm run build
+npm run server:build
+
+# Using CLI
+second-brain server
+```
+
+### Client Commands
+
+```bash
+# Consult the Council
+second-brain ask "your question here"
+
+# With custom server URL
+second-brain ask "your question" --server http://localhost:8080
+
+# Test provider connectivity
+npm run test:providers
+
+# Test individual provider
+npm run test:provider -- "GPT"
+```
+
+### Health Check
+
+Check server status and available models:
+
+```bash
+curl http://localhost:3000/health
+```
+
 ## Model Configuration
 
-The council models are configured in `src/config.ts` via the `COUNCIL_MODELS` array. This configuration defines:
-- Which models to use for each provider
-- Primary and fallback models (tried in order)
-- API keys from environment variables
+The Council models are configured in `src/config.ts` via the `COUNCIL_MODELS` array. Each provider has:
+- Primary model (tried first)
+- Fallback models (automatically tried if primary fails)
+- API key from environment variables
 
-You can edit the `COUNCIL_MODELS` array in `src/config.ts` to customize which models the council uses. Models are tried in order - if the primary fails, the system automatically falls back to the next one.
-
-Example:
+Example configuration:
 ```typescript
 {
   name: 'GPT',
@@ -67,45 +161,19 @@ Example:
 }
 ```
 
-## Usage
+You can edit `COUNCIL_MODELS` to customize which models the Council uses.
 
-### Test All Providers
+## Configuration
 
-Verify that all 4 AI providers are configured correctly:
-
-```bash
-npm run test:providers
-```
-
-This will test connectivity to all providers, automatically trying fallback models if primary ones fail. The output shows which specific model connected (e.g., "GPT: Connected (using gpt-4o)").
-
-### Test Individual Provider
-
-Test a specific provider to verify its configuration:
+Environment variables (`.env` file):
 
 ```bash
-npm run test:provider -- <provider-key>
-```
+# Server Configuration
+PORT=3000                        # Server port (default: 3000)
 
-Available providers:
-- `Claude Sonnet 4.5`
-- `GPT`
-- `Grok`
-- `Llama 4 Maverick`
-
-Example:
-```bash
-npm run test:provider -- "GPT"
-```
-
-**Note:** The `--` is required to pass arguments to the script. Provider names are case-insensitive.
-
-### Ask a Question (Coming Soon)
-
-Once implementation is complete, you'll be able to ask questions:
-
-```bash
-npm run ask "What is the best programming language for systems programming?"
+# Council Configuration
+SECOND_BRAIN_TIMEOUT_MS=30000    # Timeout per model query (default: 30000ms)
+SECOND_BRAIN_DEBUG=false         # Enable debug logging
 ```
 
 ## Development
@@ -117,12 +185,17 @@ second-brain/
 ├── src/
 │   ├── index.ts         # CLI entry point
 │   ├── config.ts        # Configuration: env vars + council model configs
-│   ├── providers/       # Provider abstraction layer (Phase 2)
-│   ├── council/         # Parallel querying module (Phase 3)
-│   ├── consensus/       # Synthesis module (Phase 4)
-│   ├── brain/           # Personal Brain module (Phase 5)
-│   ├── cli/             # CLI interface (Phase 6)
-│   └── eval/            # Evaluation harness (Phase 7)
+│   ├── ui.ts            # Terminal UI helpers
+│   ├── providers/       # Provider abstraction layer
+│   ├── council/         # Parallel querying module
+│   ├── server/          # Express server with MCP integration
+│   │   ├── index.ts     # Main server
+│   │   └── types.ts     # Request/response types
+│   └── eval/            # Evaluation harness (future)
+├── docs/
+│   ├── SERVER.md        # Server setup guide
+│   └── MCP_SETUP.md     # Claude Code integration guide
+├── dist/                # Compiled JavaScript (after build)
 ├── package.json
 ├── tsconfig.json
 └── .env
@@ -131,7 +204,10 @@ second-brain/
 ### Available Scripts
 
 ```bash
+npm run build            # Build TypeScript to JavaScript
 npm run dev              # Run CLI in development mode
+npm run server           # Start Council server (dev mode)
+npm run server:build     # Start Council server (production mode)
 npm run test:providers   # Test all provider connections
 npm run test:provider    # Test single provider (pass provider key after --)
 npm run lint             # Check for linting errors
@@ -146,29 +222,110 @@ npm run format:check     # Check code formatting
 npx tsc --noEmit
 ```
 
-## Configuration
+## API Documentation
 
-Optional environment variables:
+### MCP Tool: council_consult
 
-- `SECOND_BRAIN_TIMEOUT_MS` - Timeout for each provider in milliseconds (default: 30000)
-- `SECOND_BRAIN_DEBUG` - Enable debug logging (default: false)
+Consult the Council via the Model Context Protocol.
+
+**Parameters:**
+- `prompt` (string, required): The question or problem to consult about
+- `context` (string, optional): Additional context to help models understand
+
+**Returns:**
+```typescript
+{
+  critiques: [
+    {
+      model: string,        // Model name (e.g., "Claude Sonnet 4.5")
+      response: string,     // The model's response
+      latency_ms: number,   // Response time in milliseconds
+      error?: string        // Error message if model failed
+    }
+  ],
+  summary: {
+    models_consulted: number,  // Total models queried
+    models_responded: number,  // Models that succeeded
+    models_failed: number,     // Models that failed
+    total_latency_ms: number   // Total deliberation time
+  }
+}
+```
+
+## Documentation
+
+- **[Server Setup Guide](./docs/SERVER.md)** - Detailed server configuration and deployment
+- **[MCP Integration Guide](./docs/MCP_SETUP.md)** - Integrate with Claude Code
+- **[Architecture Document](./ARCHITECTURE.md)** - Technical design and data flows
+- **[Implementation Plan](./PLAN.md)** - Development phases and progress
 
 ## Implementation Status
 
 - [x] Phase 1: Project Setup & Provider Integration
-- [ ] Phase 2: Provider Abstraction Layer
-- [ ] Phase 3: Council Module (Parallel Querying)
-- [ ] Phase 4: Consensus Module
-- [ ] Phase 5: Personal Brain Module
-- [ ] Phase 6: CLI Interface
-- [ ] Phase 7: Evaluation Module
+- [x] Phase 2: Provider Abstraction Layer
+- [x] Phase 3: Council Module (Parallel Querying)
+- [x] Phase 7: Council Daemon Service & MCP Integration
+- [ ] Phase 8: Evaluation Module (optional)
+
+**Note:** Phases 4-6 (Personal Brain, Consensus, original CLI) were deprecated in favor of the simpler daemon service architecture.
+
+## Use Cases
+
+### For AI Agents (like Claude Code)
+- Get unstuck on difficult problems
+- Validate architectural decisions
+- Review code for potential issues
+- Explore multiple solution approaches
+- Debug complex bugs
+
+### For Developers
+- Quick CLI access to multiple frontier models
+- Compare how different models approach the same problem
+- Get diverse perspectives on technical decisions
+- Validate assumptions with multiple AI opinions
+
+## Performance
+
+- **Parallel execution**: All 4 models queried simultaneously
+- **Typical response time**: 5-15 seconds for all models
+- **Timeout**: 30 seconds per model by default (configurable)
+- **Partial results**: Continues even if some models fail
 
 ## Tech Stack
 
 - **Language:** TypeScript/Node.js
 - **LLM SDKs:** Vercel AI SDK (`@ai-sdk/*`) for unified provider interface
+- **Server:** Express.js with MCP SDK
+- **MCP:** Model Context Protocol (streamable HTTP transport)
 - **CLI Framework:** Commander.js
 - **UI:** ora (spinners), chalk (colors)
+- **Validation:** Zod (runtime type checking)
+
+## Security Notes
+
+- Server binds to `127.0.0.1` (localhost only) by default
+- No authentication implemented (intended for local development)
+- API keys stored in environment variables only
+- Never commit `.env` file to version control
+- Do NOT expose server to internet without adding authentication
+
+## Troubleshooting
+
+### Server won't start
+- Check port 3000 is not in use
+- Verify at least one API key is configured
+- Check build completed: `npm run build`
+
+### Models failing
+- Verify API keys in `.env`
+- Test providers: `npm run test:providers`
+- Check API key permissions and quotas
+- Try increasing timeout: `SECOND_BRAIN_TIMEOUT_MS=60000`
+
+### CLI can't connect
+- Ensure server is running: `npm run server`
+- Check server URL: `curl http://localhost:3000/health`
+- Verify correct port in CLI command: `--server http://localhost:PORT`
 
 ## License
 
