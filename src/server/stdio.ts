@@ -31,12 +31,9 @@ async function startStdioServer() {
     // Create stdio transport
     const transport = new StdioServerTransport();
 
-    // Connect the transport to the MCP server
+    // Connect the transport to the MCP server (this also starts the transport)
     await mcpServer.connect(transport);
-
-    // Start the transport (begins reading from stdin)
     console.error('✓ Council MCP server ready on stdio transport\n');
-    await transport.start();
   } catch (error) {
     console.error('Failed to start stdio server:', error);
     process.exit(1);
