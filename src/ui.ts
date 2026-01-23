@@ -5,7 +5,6 @@
  * - Spinners and progress indicators
  * - Colored output
  * - Response formatting
- * - Markdown rendering (future)
  */
 
 import ora, { Ora } from 'ora';
@@ -65,60 +64,11 @@ export class ProgressSpinner {
 }
 
 /**
- * Formats the final response with confidence indicators
- */
-export function formatFinalResponse(response: string, confidence: number): string {
-  const confidenceLabel =
-    confidence >= 0.8
-      ? chalk.green('High Confidence')
-      : confidence >= 0.5
-        ? chalk.yellow('Moderate Confidence')
-        : chalk.red('Low Confidence');
-
-  const confidenceBar = renderConfidenceBar(confidence);
-
-  return `
-${chalk.bold('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
-
-${response}
-
-${chalk.bold('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━')}
-${confidenceLabel} ${confidenceBar} ${chalk.gray(`(${confidence.toFixed(2)})`)}
-`;
-}
-
-/**
- * Renders a visual confidence bar
- */
-function renderConfidenceBar(confidence: number): string {
-  const totalBars = 10;
-  const filledBars = Math.round(confidence * totalBars);
-  const emptyBars = totalBars - filledBars;
-
-  const color = confidence >= 0.8 ? chalk.green : confidence >= 0.5 ? chalk.yellow : chalk.red;
-
-  return color('█'.repeat(filledBars)) + chalk.gray('░'.repeat(emptyBars));
-}
-
-/**
  * Formats timing information
  */
 export function formatTiming(totalMs: number): string {
   const seconds = (totalMs / 1000).toFixed(1);
-  return chalk.gray(`Completed in ${seconds}s`);
-}
-
-/**
- * Formats an error message
- */
-export function formatError(error: Error): string {
-  return `
-${chalk.red.bold('━━━ Error ━━━')}
-
-${chalk.red(error.message)}
-
-${chalk.gray(error.stack || '')}
-`;
+  return `${seconds}s`;
 }
 
 /**

@@ -9,26 +9,56 @@ import { createGroq } from '@ai-sdk/groq';
 import { generateText } from 'ai';
 import chalk from 'chalk';
 import ora from 'ora';
-import { handleAskCommand } from './cli/index.js';
+import axios from 'axios';
+import { ProgressSpinner, showHeader, showSuccess, showError, formatTiming } from './ui.js';
+import { CouncilResponse } from './server/types.js';
 
 interface CliOptions {
   testProviders?: boolean;
   testProvider?: string;
+  server?: string;
 }
 
 const program = new Command();
 
-program.name('second-brain').description('Multi-model AI deliberation CLI tool').version('1.0.0');
+program
+  .name('second-brain')
+  .description('Multi-model AI Council consultation CLI')
+  .version('1.0.0');
 
-// Main command: ask a question to Second Brain
+/**
+ * Ask command - consult the Council
+ */
 program
   .command('ask <question>')
-  .description('Ask a question to Second Brain (Council of 4 AI models)')
-  .action(async (question: string) => {
-    await handleAskCommand(question);
+  .description('Consult the Council of 4 AI models for perspectives and critiques')
+  .option('-s, --server <url>', 'Council server URL', 'http://127.0.0.1:3000')
+  .action(async (question: string, options: { server: string }) => {
+    await handleAskCommand(question, options.server);
   });
 
-// Test commands
+/**
+ * Server command - start the Council daemon
+ */
+program
+  .command('server')
+  .description('Start the Council daemon server')
+  .action(async () => {
+    console.log(chalk.cyan('\n🚀 Starting Council daemon server...\n'));
+    const { spawn } = await import('child_process');
+    const serverProcess = spawn('node', ['dist/server/index.js'], {
+      stdio: 'inherit',
+    });
+
+    serverProcess.on('error', (error) => {
+      console.error(chalk.red(`Failed to start server: ${error.message}`));
+      process.exit(1);
+    });
+  });
+
+/**
+ * Test commands
+ */
 program
   .option('--test-providers', 'Test connectivity to all AI providers')
   .option('--test-provider <provider>', 'Test connectivity to a specific provider (e.g., "GPT")')
@@ -41,6 +71,139 @@ program
       program.help();
     }
   });
+
+/**
+ * Handles the 'ask' command - consults the Council via HTTP
+ */
+async function handleAskCommand(question: string, serverUrl: string): Promise<void> {
+  const startTime = Date.now();
+
+  // Validate input
+  if (!question || question.trim().length === 0) {
+    showError('Please provide a question to consult the Council about.');
+    console.log(chalk.gray('Example: second-brain ask "What is TypeScript?"\n'));
+    process.exit(1);
+  }
+
+  showHeader('Council Consultation');
+  console.log(chalk.gray(`Question: ${question}\n`));
+
+  try {
+    // Check server health
+    const healthSpinner = new ProgressSpinner('Connecting to Council server...');
+    try {
+      const healthResponse = await axios.get(`${serverUrl}/health`, { timeout: 5000 });
+      const health = healthResponse.data;
+
+      if (!health.council.initialized) {
+        healthSpinner.fail(chalk.red('Council server not initialized'));
+        showError('The Council server is not ready. Please wait and try again.');
+        process.exit(1);
+      }
+
+      healthSpinner.succeed(
+        chalk.green(`Connected to Council (${health.council.models_available} models available)`)
+      );
+
+      // Show available models
+      console.log(chalk.gray('\nCouncil members:'));
+      health.council.model_names.forEach((name: string) => {
+        console.log(chalk.gray(`  • ${name}`));
+      });
+      console.log();
+    } catch (error) {
+      healthSpinner.fail(chalk.red('Cannot connect to Council server'));
+      if (axios.isAxiosError(error) && error.code === 'ECONNREFUSED') {
+        showError('Council server is not running.');
+        console.log(chalk.yellow('Start the server with: second-brain server'));
+        console.log(chalk.gray('Or run: node dist/server/index.js\n'));
+      } else {
+        showError(`Server error: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      process.exit(1);
+    }
+
+    // Consult the Council
+    const consultSpinner = new ProgressSpinner('Consulting the Council...');
+
+    const response = await axios.post(
+      `${serverUrl}/mcp`,
+      {
+        jsonrpc: '2.0',
+        id: 1,
+        method: 'tools/call',
+        params: {
+          name: 'council_consult',
+          arguments: {
+            prompt: question,
+          },
+        },
+      },
+      {
+        timeout: 120000, // 2 minute timeout for Council deliberation
+      }
+    );
+
+    const result = response.data.result;
+
+    // Extract structured content if available
+    let councilResponse: CouncilResponse;
+    if (result.structuredContent) {
+      councilResponse = result.structuredContent;
+    } else {
+      // Parse from text response (fallback)
+      consultSpinner.fail(chalk.red('Unexpected response format'));
+      showError('Could not parse Council response. Please try again.');
+      process.exit(1);
+    }
+
+    consultSpinner.succeed(
+      chalk.green(
+        `Council responded (${councilResponse.summary.models_responded}/${councilResponse.summary.models_consulted} models)`
+      )
+    );
+
+    // Display results
+    console.log(
+      chalk.bold('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n')
+    );
+
+    for (const critique of councilResponse.critiques) {
+      if (critique.error) {
+        console.log(chalk.red.bold(`${critique.model} ✗`));
+        console.log(chalk.red(`Error: ${critique.error}\n`));
+      } else {
+        console.log(chalk.green.bold(`${critique.model} ✓`));
+        console.log(`${critique.response}\n`);
+      }
+    }
+
+    console.log(chalk.bold('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━'));
+
+    const totalTime = Date.now() - startTime;
+    console.log(
+      chalk.gray(
+        `\n${councilResponse.summary.models_responded} models responded in ${formatTiming(councilResponse.summary.total_latency_ms)}`
+      )
+    );
+    console.log(chalk.gray(`Total time: ${formatTiming(totalTime)}`));
+
+    showSuccess('Council consultation complete!');
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      if (error.code === 'ECONNABORTED') {
+        showError('Request timed out. The Council is taking too long to respond.');
+      } else if (error.response) {
+        showError(`Server error: ${error.response.status} ${error.response.statusText}`);
+      } else {
+        showError(`Network error: ${error.message}`);
+      }
+    } else {
+      showError(`Unexpected error: ${error instanceof Error ? error.message : String(error)}`);
+    }
+    process.exit(1);
+  }
+}
 
 /**
  * Creates a provider client based on provider type

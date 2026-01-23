@@ -105,16 +105,24 @@ Once configured, Claude Code can consult the Council directly when working on yo
 ### Server Commands
 
 ```bash
-# Start server (development mode with auto-reload)
+# Start HTTP server (development mode with auto-reload)
 npm run server
 
-# Start server (production mode, requires build first)
+# Start HTTP server (production mode, requires build first)
 npm run build
 npm run server:build
+
+# Start stdio server (for MCP stdio transport)
+npm run server:stdio
 
 # Using CLI
 second-brain server
 ```
+
+The server supports three transport modes:
+- **HTTP (POST /mcp)**: Streamable HTTP transport for modern MCP clients
+- **SSE (GET /mcp)**: Server-Sent Events for older MCP clients (deprecated)
+- **stdio**: Process-based communication for local MCP clients (recommended for development)
 
 ### Client Commands
 
@@ -255,7 +263,8 @@ Consult the Council via the Model Context Protocol.
 ## Documentation
 
 - **[Server Setup Guide](./docs/SERVER.md)** - Detailed server configuration and deployment
-- **[MCP Integration Guide](./docs/MCP_SETUP.md)** - Integrate with Claude Code
+- **[MCP Integration Guide](./docs/MCP_SETUP.md)** - Integrate with Claude Code (stdio, HTTP, SSE transports)
+- **[Security Guide](./docs/SECURITY.md)** - Comprehensive security documentation and best practices
 - **[Architecture Document](./ARCHITECTURE.md)** - Technical design and data flows
 - **[Implementation Plan](./PLAN.md)** - Development phases and progress
 
@@ -301,13 +310,44 @@ Consult the Council via the Model Context Protocol.
 - **UI:** ora (spinners), chalk (colors)
 - **Validation:** Zod (runtime type checking)
 
-## Security Notes
+## Security
 
-- Server binds to `127.0.0.1` (localhost only) by default
-- No authentication implemented (intended for local development)
-- API keys stored in environment variables only
-- Never commit `.env` file to version control
-- Do NOT expose server to internet without adding authentication
+The Council server implements comprehensive security measures:
+
+### Network Security
+- **Localhost binding**: Server binds to `127.0.0.1` only (no external access)
+- **Origin validation**: Requests validated to ensure localhost origin
+- **DNS rebinding protection**: Host header validation
+
+### Request Protection
+- **Rate limiting**: 100 requests per 15 minutes (configurable via `RATE_LIMIT_*` env vars)
+- **Input sanitization**: Control character removal, length limits
+- **Injection detection**: Monitors for prompt injection attempts
+
+### Data Protection
+- **Output sanitization**: Automatic detection and redaction of sensitive data (API keys, credentials, private keys)
+- **Security headers**: Helmet middleware with CSP, X-Frame-Options, etc.
+- **API keys**: Stored securely in environment variables only
+
+### Configuration
+
+Rate limiting can be configured via environment variables:
+
+```bash
+# .env
+RATE_LIMIT_WINDOW_MS=900000      # 15 minutes (default)
+RATE_LIMIT_MAX_REQUESTS=100       # Max requests per window (default)
+```
+
+### Best Practices
+
+- ✅ Never commit `.env` file to version control
+- ✅ Use stdio transport for local development (lowest attack surface)
+- ✅ Monitor server logs for injection detection warnings
+- ✅ Rotate API keys periodically
+- ⚠️ **Do NOT expose server to internet without adding authentication**
+
+See [docs/SECURITY.md](./docs/SECURITY.md) for comprehensive security documentation.
 
 ## Troubleshooting
 

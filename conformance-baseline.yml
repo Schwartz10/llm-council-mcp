@@ -1,0 +1,26 @@
+# MCP Conformance Test Baseline
+#
+# This file documents known deviations from the MCP specification or expected test failures.
+# It serves as a baseline for tracking conformance over time.
+#
+# Format:
+#   - test_name: Name of the failing test
+#     reason: Why it fails or why the deviation is acceptable
+#     tracking: Issue number or plan to fix (optional)
+
+# Example:
+# - test_name: "tools/call with streaming"
+#   reason: "Streaming tool responses not yet implemented"
+#   tracking: "Phase 7 - will be implemented in future release"
+
+# Current Status: All tests expected to pass
+# Last Updated: 2026-01-22
+
+known_issues: []
+
+notes:
+  - The server implements MCP specification version 2025-06-18
+  - Supports stdio transport (preferred for local development)
+  - Supports Streamable HTTP transport (POST /mcp)
+  - Supports SSE transport (GET /mcp) for backwards compatibility with 2024-11-05 clients
+  - All transports use the same shared server instance and tool definitions

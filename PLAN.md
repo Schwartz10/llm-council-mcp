@@ -622,7 +622,12 @@ Response {
 - [x] `/health` endpoint returns model list
 - [x] MCP endpoint accepts council_consult tool calls
 - [x] CLI can call server (implementation complete, ready for manual testing)
-- [ ] MCP endpoint tested with Claude Code (ready for integration testing)
+- [x] MCP endpoint tested with Claude Code ✅ **VERIFIED**
+  - Successfully consulted Council with question "What is the meaning of life?"
+  - All 4 models responded (Claude Sonnet 4.5, GPT, Grok, Llama 4 Maverick)
+  - Total deliberation time: 19.7s
+  - Structured responses returned correctly via MCP protocol
+  - Both text/markdown and structuredContent formats working
 - [ ] Concurrent requests tested (ready for load testing)
 - [x] Documentation complete and clear
 - [x] All TypeScript and linting checks passing
@@ -1086,7 +1091,7 @@ After each phase, verify:
 - [x] ~~**Phase 4:**~~ ~~Consensus module~~ (**DEPRECATED** - removed in Phase 7)
 - [x] ~~**Phase 5:**~~ ~~Personal Brain post-processing~~ (**DEPRECATED** - removed in Phase 7)
 - [x] **Phase 6:** Full CLI flow works: ask question → see progress → get answer
-- [x] **Phase 7:** Daemon server running, CLI and MCP both work, Council returns critiques
+- [x] **Phase 7:** Daemon server running, CLI and MCP both work, Council returns critiques ✅ **Successfully tested with Claude Code - all 4 models responded in 19.7s**
 - [ ] **Phase 9:** MCP spec compliance verified, security hardening complete, conformance tests pass ⭐ **MVP COMPLETE**
 - [ ] **Phase 8:** Eval harness can validate Council provides useful help (deferred post-MVP)
 
