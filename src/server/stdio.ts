@@ -26,7 +26,7 @@ async function startStdioServer() {
     }
 
     // Initialize Council (must happen before transport.start())
-    await initializeCouncil();
+    initializeCouncil();
 
     // Create stdio transport
     const transport = new StdioServerTransport();

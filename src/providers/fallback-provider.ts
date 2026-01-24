@@ -14,7 +14,7 @@ export class FallbackProvider implements Provider {
     this.name = name;
     this.providers = providers;
     this.cooldownMs = cooldownMs;
-    this.failureTimestamps = new Array(providers.length).fill(undefined);
+    this.failureTimestamps = new Array<number | undefined>(providers.length).fill(undefined);
     this.lastSuccessIndex = 0;
   }
 

@@ -90,10 +90,16 @@ app.post('/mcp', mcpRateLimiter, async (req: Request, res: Response) => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('MCP request failed:', errorMessage);
     if (!res.headersSent) {
+      const requestBody: unknown = req.body;
+      const requestId =
+        requestBody && typeof requestBody === 'object' && 'id' in requestBody
+          ? (requestBody as { id?: unknown }).id
+          : null;
+      const sanitizedRequestId =
+        typeof requestId === 'string' || typeof requestId === 'number' ? requestId : null;
       const errorPayload: Record<string, unknown> = {
         jsonrpc: '2.0',
-        id:
-          typeof req.body?.id === 'string' || typeof req.body?.id === 'number' ? req.body.id : null,
+        id: sanitizedRequestId,
         error: {
           code: -32603,
           message: 'Internal error',
@@ -134,7 +140,7 @@ app.get('/mcp', mcpRateLimiter, async (_req: Request, res: Response) => {
 });
 
 // Start server
-async function startServer() {
+function startServer() {
   // Validate API keys
   const missingKeys = getMissingApiKeys();
   if (missingKeys.length > 0) {
@@ -143,7 +149,7 @@ async function startServer() {
   }
 
   // Initialize Council
-  await initializeCouncil();
+  initializeCouncil();
 
   // Start listening
   const port = parseInt(process.env.PORT || '3000');
@@ -156,7 +162,9 @@ async function startServer() {
 }
 
 // Handle errors
-startServer().catch((error) => {
+try {
+  startServer();
+} catch (error) {
   console.error('Failed to start server:', error);
   process.exit(1);
-});
+}
