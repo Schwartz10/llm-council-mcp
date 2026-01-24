@@ -206,10 +206,18 @@ describe('Council Response Sanitization', () => {
     expect(result.warnings).toContain('API keys detected and redacted');
   });
 
-  test('detects but does not redact emails', () => {
+  test('redacts emails by default', () => {
     const text = 'Contact support@example.com for help';
     const result = sanitizeCouncilResponse(text);
-    expect(result.text).toBe(text); // Email not redacted
+    expect(result.text).toContain('[REDACTED_EMAIL]');
+    expect(result.redacted).toBe(true);
+    expect(result.warnings).toContain('Email addresses detected and redacted');
+  });
+
+  test('allows disabling email redaction', () => {
+    const text = 'Contact support@example.com for help';
+    const result = sanitizeCouncilResponse(text, { redactEmails: false });
+    expect(result.text).toBe(text);
     expect(result.redacted).toBe(false);
     expect(result.warnings).toContain('Email addresses detected (not redacted)');
   });

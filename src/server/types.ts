@@ -4,12 +4,15 @@
  * Request/response interfaces for the Council daemon server.
  */
 
+import type { ProviderAttachment } from '../providers/types.js';
+
 /**
  * Council consultation request
  */
 export interface CouncilRequest {
   prompt: string; // The question or prompt to consult Council about
   context?: string; // Optional additional context
+  attachments?: ProviderAttachment[]; // Optional file attachments
 }
 
 /**

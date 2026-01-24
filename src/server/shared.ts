@@ -12,7 +12,9 @@ import { Provider } from '../providers/types.js';
 import { createCouncilProviders } from '../providers/index.js';
 import { loadConfig } from '../config.js';
 import { CouncilRequest, CouncilResponse, ModelCritique } from './types.js';
+import { normalizeAttachments } from './attachments.js';
 import { sanitizeCouncilRequest, sanitizeCouncilResponse } from './sanitize.js';
+import { toMcpError } from './mcp-errors.js';
 
 // Load configuration
 const config = loadConfig();
@@ -64,6 +66,24 @@ const CouncilConsultInputSchema = z
       .string()
       .optional()
       .describe('Optional additional context to help the Council understand the question'),
+    attachments: z
+      .array(
+        z
+          .object({
+            filename: z.string().optional().describe('Optional filename for the attachment'),
+            mediaType: z.string().min(1).describe('IANA media type (e.g., application/zip)'),
+            data: z
+              .string()
+              .optional()
+              .describe('Base64-encoded content or data URL for the attachment'),
+            url: z.string().url().optional().describe('http(s) URL to the attachment'),
+          })
+          .refine((value) => (value.data ? !value.url : !!value.url), {
+            message: 'Provide exactly one of data or url for attachments',
+          })
+      )
+      .optional()
+      .describe('Optional file attachments to include with the consultation'),
   })
   .strict();
 
@@ -84,6 +104,8 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     console.warn('⚠️ Proceeding with potentially malicious prompt (injection detected)');
   }
 
+  const attachments = normalizeAttachments(request.attachments);
+
   // Build the full prompt with context if provided
   const fullPrompt = sanitized.context
     ? `Context: ${sanitized.context}\n\nQuestion: ${sanitized.prompt}`
@@ -94,12 +116,12 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     timeoutMs: config.timeoutMs,
   });
 
-  const result = await council.deliberate(fullPrompt);
+  const result = await council.deliberate(fullPrompt, { attachments });
 
   // Transform deliberation result to response format with output sanitization
   const critiques: ModelCritique[] = result.responses.map((response) => {
     const content = response.error || response.content;
-    const sanitizedOutput = sanitizeCouncilResponse(content);
+    const sanitizedOutput = sanitizeCouncilResponse(content, { redactEmails: config.redactEmails });
 
     return {
       model: response.provider,
@@ -150,6 +172,7 @@ All models are queried in parallel and provide independent responses without kno
 Args:
   - prompt (string): The question or problem you need help with
   - context (string, optional): Additional context to help models understand the situation
+  - attachments (array, optional): File attachments (base64/data URL or http(s) URL) for supported file types
 
 Returns:
   JSON object with schema:
@@ -192,6 +215,7 @@ Error Handling:
         const result = await consultCouncil({
           prompt: params.prompt,
           context: params.context,
+          attachments: params.attachments,
         });
 
         // Format as both text (markdown) and structured data
@@ -221,15 +245,7 @@ Error Handling:
           structuredContent: result as unknown as Record<string, unknown>, // Modern pattern for structured data
         };
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error consulting Council: ${errorMessage}`,
-            },
-          ],
-        };
+        throw toMcpError(error, config.debug);
       }
     }
   );

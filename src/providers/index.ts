@@ -1,12 +1,15 @@
-import { COUNCIL_MODELS } from '../config.js';
+import { COUNCIL_MODELS, loadConfig } from '../config.js';
 import { AnthropicProvider } from './anthropic/index.js';
 import { GroqProvider } from './groq/index.js';
 import { OpenAIProvider } from './openai/index.js';
+import { FallbackProvider } from './fallback-provider.js';
 import { Provider } from './types.js';
 import { XAIProvider } from './xai/index.js';
 
 // Re-export types
 export type { Provider, ProviderResponse } from './types.js';
+
+const config = loadConfig();
 
 /**
  * Creates a provider instance for a given model config
@@ -78,27 +81,19 @@ export async function createCouncilProviders(): Promise<Provider[]> {
  * @returns Provider instance or null if all models fail
  */
 export async function createProviderWithFallback(
-  config: (typeof COUNCIL_MODELS)[number],
-  testPrompt: string = 'Hello'
+  modelConfig: (typeof COUNCIL_MODELS)[number]
 ): Promise<Provider | null> {
-  if (!config.apiKey) {
+  if (!modelConfig.apiKey) {
     return null;
   }
 
-  for (const modelId of config.models) {
-    try {
-      const provider = createProvider(config.provider, config.apiKey, modelId, config.name);
+  const providers = modelConfig.models.map((modelId) =>
+    createProvider(modelConfig.provider, modelConfig.apiKey!, modelId, modelConfig.name)
+  );
 
-      // Test the provider with a simple query
-      await provider.query(testPrompt);
-
-      return provider;
-    } catch {
-      // Try next model in the fallback chain
-      continue;
-    }
+  if (providers.length === 1) {
+    return providers[0];
   }
 
-  // All models failed
-  return null;
+  return new FallbackProvider(modelConfig.name, providers, config.fallbackCooldownMs);
 }

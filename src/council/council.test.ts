@@ -119,7 +119,7 @@ describe('Council', () => {
       }
     );
 
-    await council.deliberate('Test question', onProgress);
+    await council.deliberate('Test question', { onProgress });
 
     // Should be called 3 times (once for each provider)
     expect(onProgress).toHaveBeenCalledTimes(3);
@@ -151,7 +151,7 @@ describe('Council', () => {
       }
     );
 
-    await council.deliberate('Test question', onProgress);
+    await council.deliberate('Test question', { onProgress });
 
     expect(onProgress).toHaveBeenCalledTimes(2);
 

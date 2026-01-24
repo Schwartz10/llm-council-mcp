@@ -1,4 +1,4 @@
-import type { Provider, ProviderResponse } from '../providers/types.js';
+import type { Provider, ProviderAttachment, ProviderResponse } from '../providers/types.js';
 import type { DeliberationResult, ProgressCallback } from './types.js';
 
 /**
@@ -31,7 +31,10 @@ export class Council {
    * @param onProgress - Optional progress callback for UI updates
    * @returns Deliberation result with all responses and metadata
    */
-  async deliberate(prompt: string, onProgress?: ProgressCallback): Promise<DeliberationResult> {
+  async deliberate(
+    prompt: string,
+    options?: { onProgress?: ProgressCallback; attachments?: ProviderAttachment[] }
+  ): Promise<DeliberationResult> {
     if (this.debug) {
       console.log(`[Council] Starting deliberation with ${this.providers.length} providers`);
     }
@@ -39,22 +42,36 @@ export class Council {
     const startTime = Date.now();
     let completedCount = 0;
     const total = this.providers.length;
+    const attachments = options?.attachments;
 
     // Create queries with timeout for each provider
     const queries = this.providers.map(async (provider) => {
       try {
-        // Create timeout promise
-        const timeoutPromise = new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error(`Timeout after ${this.timeoutMs}ms`)), this.timeoutMs)
-        );
+        const controller = new AbortController();
+        let timeoutId: NodeJS.Timeout | undefined;
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          timeoutId = setTimeout(() => {
+            controller.abort();
+            reject(new Error(`Timeout after ${this.timeoutMs}ms`));
+          }, this.timeoutMs);
+        });
 
-        // Race between provider query and timeout
-        const response = await Promise.race([provider.query(prompt), timeoutPromise]);
+        let response: ProviderResponse;
+        try {
+          response = await Promise.race([
+            provider.query(prompt, { signal: controller.signal, attachments }),
+            timeoutPromise,
+          ]);
+        } finally {
+          if (timeoutId) {
+            clearTimeout(timeoutId);
+          }
+        }
 
         // Report progress
         completedCount++;
-        if (onProgress) {
-          onProgress({
+        if (options?.onProgress) {
+          options.onProgress({
             providerName: provider.name,
             success: true,
             completed: completedCount,
@@ -70,8 +87,8 @@ export class Council {
       } catch (error) {
         // Report progress for failure too
         completedCount++;
-        if (onProgress) {
-          onProgress({
+        if (options?.onProgress) {
+          options.onProgress({
             providerName: provider.name,
             success: false,
             completed: completedCount,

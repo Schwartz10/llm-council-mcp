@@ -1,6 +1,7 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { generateText, streamText } from 'ai';
-import { Provider, ProviderResponse } from '../types.js';
+import { buildUserContent } from '../message.js';
+import { Provider, ProviderResponse, ProviderRequestOptions } from '../types.js';
 
 /**
  * Anthropic provider - model-agnostic wrapper for any Anthropic model
@@ -16,13 +17,17 @@ export class AnthropicProvider implements Provider {
     this.name = displayName || `Anthropic (${modelId})`;
   }
 
-  async query(prompt: string): Promise<ProviderResponse> {
+  async query(prompt: string, options?: ProviderRequestOptions): Promise<ProviderResponse> {
     const startTime = Date.now();
 
     try {
+      const content = buildUserContent(prompt, options?.attachments);
       const result = await generateText({
         model: this.client(this.modelId),
-        prompt,
+        ...(Array.isArray(content)
+          ? { messages: [{ role: 'user', content }] }
+          : { prompt: content }),
+        abortSignal: options?.signal,
       });
 
       const latencyMs = Date.now() - startTime;
@@ -53,11 +58,15 @@ export class AnthropicProvider implements Provider {
     }
   }
 
-  async *queryStream(prompt: string): AsyncIterable<string> {
+  async *queryStream(prompt: string, options?: ProviderRequestOptions): AsyncIterable<string> {
     try {
+      const content = buildUserContent(prompt, options?.attachments);
       const result = streamText({
         model: this.client(this.modelId),
-        prompt,
+        ...(Array.isArray(content)
+          ? { messages: [{ role: 'user', content }] }
+          : { prompt: content }),
+        abortSignal: options?.signal,
       });
 
       // Stream text chunks as they arrive
