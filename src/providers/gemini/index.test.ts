@@ -30,4 +30,18 @@ describe('GeminiProvider', () => {
 
     await expect(provider.query(TEST_PROMPT)).rejects.toThrow();
   });
+
+  it('should stream responses', async () => {
+    if (skipIfNoApiKey(apiKeys.gemini, 'Gemini')) return;
+
+    const provider = new GeminiProvider(apiKeys.gemini!, TEST_MODELS.gemini);
+    const chunks: string[] = [];
+
+    for await (const chunk of provider.queryStream(TEST_PROMPT)) {
+      chunks.push(chunk);
+    }
+
+    expect(chunks.length).toBeGreaterThan(0);
+    expect(chunks.join('')).toBeTruthy();
+  });
 });

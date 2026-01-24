@@ -36,7 +36,7 @@ export class GeminiProvider implements Provider {
     } catch (error) {
       const latencyMs = Date.now() - startTime;
       throw new Error(
-        `Gemini query failed (${latencyMs}ms): ${error instanceof Error ? error.message : String(error)}`
+        `Gemini query failed for ${this.name} (${latencyMs}ms): ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
@@ -54,7 +54,7 @@ export class GeminiProvider implements Provider {
       }
     } catch (error) {
       throw new Error(
-        `Gemini stream failed: ${error instanceof Error ? error.message : String(error)}`
+        `Gemini stream failed for ${this.name}: ${error instanceof Error ? error.message : String(error)}`
       );
     }
   }
