@@ -166,10 +166,7 @@ export function detectSensitiveData(text: string): {
  * @param text - The text to redact sensitive data from
  * @returns Redacted text with sensitive patterns replaced
  */
-export function redactSensitiveData(
-  text: string,
-  options?: { redactEmails?: boolean }
-): string {
+export function redactSensitiveData(text: string, options?: { redactEmails?: boolean }): string {
   if (!text) {
     return '';
   }
@@ -259,4 +256,3 @@ export function sanitizeCouncilResponse(
   // Return warnings even if nothing was redacted (e.g., email detection)
   return { text, redacted: false, warnings };
 }
-

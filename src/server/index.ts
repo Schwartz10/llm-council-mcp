@@ -92,7 +92,8 @@ app.post('/mcp', mcpRateLimiter, async (req: Request, res: Response) => {
     if (!res.headersSent) {
       const errorPayload: Record<string, unknown> = {
         jsonrpc: '2.0',
-        id: typeof req.body?.id === 'string' || typeof req.body?.id === 'number' ? req.body.id : null,
+        id:
+          typeof req.body?.id === 'string' || typeof req.body?.id === 'number' ? req.body.id : null,
         error: {
           code: -32603,
           message: 'Internal error',
@@ -159,4 +160,3 @@ startServer().catch((error) => {
   console.error('Failed to start server:', error);
   process.exit(1);
 });
-

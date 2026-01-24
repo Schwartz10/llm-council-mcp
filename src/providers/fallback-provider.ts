@@ -32,7 +32,9 @@ export class FallbackProvider implements Provider {
 
   private getCandidateIndexes(): number[] {
     const indexes = Array.from({ length: this.providers.length }, (_, i) => i);
-    const rotated = indexes.slice(this.lastSuccessIndex).concat(indexes.slice(0, this.lastSuccessIndex));
+    const rotated = indexes
+      .slice(this.lastSuccessIndex)
+      .concat(indexes.slice(0, this.lastSuccessIndex));
     const healthy = rotated.filter((index) => this.isHealthy(index));
     if (healthy.length > 0) {
       return healthy;
@@ -90,4 +92,3 @@ export class FallbackProvider implements Provider {
     throw new Error('All fallback providers failed');
   }
 }
-
