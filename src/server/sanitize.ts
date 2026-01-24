@@ -109,6 +109,7 @@ function getSensitivePatterns() {
     apiKeys: [
       /sk-ant-[a-zA-Z0-9]{20,}/g, // Anthropic API keys
       /sk-[a-zA-Z0-9]{32,}/g, // OpenAI API keys
+      /AIza[0-9A-Za-z-_]{30,}/g, // Gemini API keys (Google)
       /xai-[a-zA-Z0-9]{20,}/g, // xAI API keys
       /gsk_[a-zA-Z0-9]{20,}/g, // Groq API keys
       /Bearer\s+[a-zA-Z0-9._-]{20,}/g, // Bearer tokens

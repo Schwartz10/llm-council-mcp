@@ -59,7 +59,7 @@ stdio transport spawns the server as a subprocess and communicates via stdin/std
     "council": {
       "command": "node",
       "args": ["/path/to/second-brain/dist/server/stdio.js"],
-      "description": "Consult 4 frontier AI models for alternative perspectives"
+      "description": "Consult frontier AI models for alternative perspectives"
     }
   }
 }
@@ -75,7 +75,7 @@ HTTP transport connects to a running server instance.
     "council": {
       "url": "http://127.0.0.1:3000/mcp",
       "transport": "streamable-http",
-      "description": "Consult 4 frontier AI models for alternative perspectives"
+      "description": "Consult frontier AI models for alternative perspectives"
     }
   }
 }
@@ -91,7 +91,7 @@ For older MCP clients (2024-11-05 spec), the server also supports Server-Sent Ev
     "council": {
       "url": "http://127.0.0.1:3000/mcp",
       "transport": "sse",
-      "description": "Consult 4 frontier AI models (SSE transport - deprecated)"
+      "description": "Consult frontier AI models (SSE transport - deprecated)"
     }
   }
 }
@@ -109,7 +109,7 @@ In Claude Code, try using the Council:
 Can you consult the Council about: "What is the best way to implement authentication in a Node.js app?"
 ```
 
-Claude Code should automatically invoke the `council_consult` tool and present you with responses from all 4 models.
+Claude Code should automatically invoke the `council_consult` tool and present you with responses from all configured models.
 
 ## Using the Council in Claude Code
 
@@ -128,7 +128,7 @@ The Council is most valuable for:
 When you ask Claude Code to consult the Council:
 
 1. Claude Code formulates a clear question
-2. Sends the question to all 4 Council models in parallel
+2. Sends the question to all configured Council models in parallel
 3. Receives independent responses from each model
 4. Synthesizes the responses for you
 5. Uses the Council's feedback to improve its answer
@@ -291,11 +291,11 @@ You can run multiple Council servers with different configurations:
 2. **Clear questions**: When consulting, provide clear, specific questions
 3. **Add context**: Use the `context` parameter to give models relevant background
 4. **Review all responses**: Don't just use the first answer - consider all perspectives
-5. **Monitor costs**: Each consultation queries 4 models - be mindful of API usage
+5. **Monitor costs**: Each consultation queries multiple models - be mindful of API usage
 
 ## Performance
 
-- **Parallel execution**: All 4 models are queried simultaneously
+- **Parallel execution**: All configured models are queried simultaneously
 - **Typical response time**: 5-15 seconds for all models to respond
 - **Timeout**: 30 seconds per model by default (configurable)
 - **Partial results**: If some models fail, you still get responses from others

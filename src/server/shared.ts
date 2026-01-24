@@ -157,13 +157,14 @@ export function registerMcpTools(): void {
     'council_consult',
     {
       title: 'Consult Council',
-      description: `Consult the Council of 4 frontier AI models for alternative perspectives, critiques, and suggestions.
+      description: `Consult the Council of frontier AI models for alternative perspectives, critiques, and suggestions.
 
 This tool is designed for "Phone a Friend" scenarios - when you're uncertain or stuck, the Council provides independent critiques from multiple models to help you make better decisions.
 
 The Council consists of:
 - Claude Sonnet 4.5 (Anthropic)
 - GPT-5.2 / GPT-4o (OpenAI)
+- Gemini (Google)
 - Grok 3 Beta (xAI)
 - Llama 4 Maverick (Groq)
 

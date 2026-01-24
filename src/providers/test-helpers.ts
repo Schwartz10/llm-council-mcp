@@ -9,6 +9,7 @@ export const TEST_MODELS = {
   openai: 'gpt-4o-mini', // Mini is cheapest
   xai: 'grok-3-beta', // Only one model available
   groq: 'llama-3.3-70b-versatile', // Fast and cheap via Groq
+  gemini: '', // Empty string for now (no API key configured)
 };
 
 /**
@@ -26,6 +27,7 @@ export function getTestApiKeys() {
     openai: config.openaiApiKey,
     xai: config.xaiApiKey,
     groq: config.groqApiKey,
+    gemini: config.geminiApiKey,
   };
 }
 

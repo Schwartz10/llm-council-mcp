@@ -129,6 +129,12 @@ describe('Sensitive Data Detection', () => {
     expect(result.hasApiKeys).toBe(true);
   });
 
+  test('detects Gemini API keys', () => {
+    const text = 'AIzaSyA-1234567890abcdef1234567890abcd';
+    const result = detectSensitiveData(text);
+    expect(result.hasApiKeys).toBe(true);
+  });
+
   test('detects Bearer tokens', () => {
     const text = 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9';
     const result = detectSensitiveData(text);
@@ -176,6 +182,12 @@ describe('Sensitive Data Redaction', () => {
     expect(redacted).toContain('[REDACTED_API_KEY]');
     expect(redacted).not.toContain('sk-ant-1234567890abcdef1234');
     expect(redacted).not.toContain('xai-1234567890abcdef1234');
+  });
+
+  test('redacts Gemini API keys', () => {
+    const text = 'Google key: AIzaSyA-1234567890abcdef1234567890abcd';
+    const redacted = redactSensitiveData(text);
+    expect(redacted).toBe('Google key: [REDACTED_API_KEY]');
   });
 
   test('redacts AWS credentials', () => {

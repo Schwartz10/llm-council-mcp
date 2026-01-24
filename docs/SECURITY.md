@@ -119,6 +119,7 @@ The server detects the following patterns in model responses:
 **API Keys & Tokens:**
 - Anthropic API keys: `sk-ant-...`
 - OpenAI API keys: `sk-...`
+- Gemini API keys: `AIza...`
 - xAI API keys: `xai-...`
 - Groq API keys: `gsk_...`
 - Bearer tokens

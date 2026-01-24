@@ -1,6 +1,6 @@
 # Council Server Setup Guide
 
-The Council daemon is an Express server with MCP (Model Context Protocol) integration that provides parallel consultation with 4 frontier AI models as a shared service.
+The Council daemon is an Express server with MCP (Model Context Protocol) integration that provides parallel consultation with frontier AI models as a shared service.
 
 ## Architecture
 
@@ -23,7 +23,7 @@ The Council daemon is an Express server with MCP (Model Context Protocol) integr
 │  • POST /mcp - MCP over streamable HTTP            │
 │  • GET /health - Health check                      │
 │                                                     │
-│  Council: 4 models query in parallel               │
+│  Council: models query in parallel                 │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -49,6 +49,7 @@ Create a `.env` file in the project root with your API keys:
 # Required API Keys
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
 XAI_API_KEY=xai-...
 GROQ_API_KEY=gsk_...
 
@@ -95,10 +96,11 @@ curl http://localhost:3000/health
   "status": "ok",
   "council": {
     "initialized": true,
-    "models_available": 4,
+    "models_available": 5,
     "model_names": [
       "Claude Sonnet 4.5",
       "GPT",
+      "Gemini",
       "Grok",
       "Llama 4 Maverick"
     ]
@@ -154,8 +156,8 @@ curl -X POST http://localhost:3000/mcp \
         ...
       ],
       "summary": {
-        "models_consulted": 4,
-        "models_responded": 4,
+        "models_consulted": 5,
+        "models_responded": 5,
         "models_failed": 0,
         "total_latency_ms": 5678
       }
@@ -166,12 +168,13 @@ curl -X POST http://localhost:3000/mcp \
 
 ## The Council
 
-The Council consists of 4 frontier AI models that provide independent critiques:
+The Council consists of frontier AI models that provide independent critiques:
 
 1. **Claude Sonnet 4.5** (Anthropic) - with fallback to Sonnet 3.5
 2. **GPT-5.2 / GPT-4o** (OpenAI) - with automatic fallback chain
-3. **Grok 3 Beta** (xAI)
-4. **Llama 4 Maverick** (Groq) - with fallback to Llama 3.3
+3. **Gemini** (Google) - with fallback to Gemini 1.5 Pro
+4. **Grok 3 Beta** (xAI)
+5. **Llama 4 Maverick** (Groq) - with fallback to Llama 3.3
 
 All models are queried in parallel (30s timeout per model by default). If individual models fail, the Council continues with remaining models.
 
@@ -194,7 +197,7 @@ Check server logs for:
 
 Example startup output:
 ```
-✓ Council initialized with 4 models
+✓ Council initialized with 5 models
 
 ✓ Council daemon server running on http://127.0.0.1:3000
   - Health check: http://127.0.0.1:3000/health

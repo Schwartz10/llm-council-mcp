@@ -3,6 +3,7 @@
 import { Command } from 'commander';
 import { getMissingApiKeys, COUNCIL_MODELS, ModelConfig } from './config.js';
 import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createXai } from '@ai-sdk/xai';
 import { createGroq } from '@ai-sdk/groq';
@@ -31,7 +32,7 @@ program
  */
 program
   .command('ask <question>')
-  .description('Consult the Council of 4 AI models for perspectives and critiques')
+  .description('Consult the Council of AI models for perspectives and critiques')
   .option('-s, --server <url>', 'Council server URL', 'http://127.0.0.1:3000')
   .action(async (question: string, options: { server: string }) => {
     await handleAskCommand(question, options.server);
@@ -224,6 +225,8 @@ function createProviderClient(provider: string, apiKey: string) {
       return createAnthropic({ apiKey });
     case 'openai':
       return createOpenAI({ apiKey });
+    case 'gemini':
+      return createGoogleGenerativeAI({ apiKey });
     case 'xai':
       return createXai({ apiKey });
     case 'groq':

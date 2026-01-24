@@ -10,6 +10,7 @@ dotenv.config({ path: join(__dirname, '..', '.env'), quiet: true });
 export interface Config {
   anthropicApiKey?: string;
   openaiApiKey?: string;
+  geminiApiKey?: string;
   xaiApiKey?: string;
   groqApiKey?: string;
   timeoutMs: number;
@@ -63,7 +64,13 @@ const DEFAULT_ATTACHMENT_MEDIA_TYPES = [
  * Returns a list of missing API keys
  */
 export function getMissingApiKeys(): string[] {
-  const apiKeys = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'XAI_API_KEY', 'GROQ_API_KEY'];
+  const apiKeys = [
+    'ANTHROPIC_API_KEY',
+    'OPENAI_API_KEY',
+    'GEMINI_API_KEY',
+    'XAI_API_KEY',
+    'GROQ_API_KEY',
+  ];
 
   return apiKeys.filter((key) => {
     const value = process.env[key];
@@ -86,6 +93,7 @@ export function loadConfig(): Config {
   return {
     anthropicApiKey: getEnvVar('ANTHROPIC_API_KEY'),
     openaiApiKey: getEnvVar('OPENAI_API_KEY'),
+    geminiApiKey: getEnvVar('GEMINI_API_KEY'),
     xaiApiKey: getEnvVar('XAI_API_KEY'),
     groqApiKey: getEnvVar('GROQ_API_KEY'),
     timeoutMs: getEnvInt('SECOND_BRAIN_TIMEOUT_MS', 30000),
@@ -129,6 +137,15 @@ export const COUNCIL_MODELS: ModelConfig[] = [
       'gpt-5.2', // Primary: GPT-5.2 (requires org verification)
       'gpt-4o', // Fallback: GPT-4 Optimized (widely available)
       'gpt-4-turbo', // Fallback: GPT-4 Turbo
+    ],
+  },
+  {
+    name: 'Gemini',
+    provider: 'gemini',
+    apiKey: env.geminiApiKey,
+    models: [
+      'gemini-2.0-flash', // Primary: Fast Gemini
+      'gemini-1.5-pro', // Fallback: Gemini 1.5 Pro
     ],
   },
   {

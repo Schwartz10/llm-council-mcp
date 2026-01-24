@@ -2,7 +2,7 @@
 
 ## Overview
 
-Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of 4 frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
+Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
 
 **Status:** Phase 6 Complete - MVP READY (Full end-to-end CLI with all modules integrated)
 
@@ -88,7 +88,7 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
 │   • src/council/types.ts (DeliberationResult, ProgressCallback)        │
 │                                                                         │
 │  Responsibilities:                                                      │
-│   • Query all 4 providers in parallel (Promise.allSettled)             │
+│   • Query all configured providers in parallel (Promise.allSettled)    │
 │   • 30s timeout per provider (configurable)                            │
 │   • Handle partial failures gracefully                                 │
 │   • Emit progress events for UI                                        │
@@ -125,7 +125,7 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
 │   • src/consensus/prompts.ts (synthesis prompt templates)              │
 │                                                                         │
 │  Responsibilities:                                                      │
-│   • Synthesize 4 Council responses into unified answer                 │
+│   • Synthesize Council responses into unified answer                   │
 │   • Identify agreement vs disagreement patterns                        │
 │   • Calculate confidence score (0-1) based on consensus                │
 │   • Note significant dissent                                           │
@@ -188,6 +188,7 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
 Files:
   • src/providers/anthropic/index.ts (AnthropicProvider class)
   • src/providers/openai/index.ts (OpenAIProvider class)
+  • src/providers/gemini/index.ts (GeminiProvider class)
   • src/providers/xai/index.ts (XAIProvider class)
   • src/providers/groq/index.ts (GroqProvider class)
 
@@ -200,7 +201,7 @@ Each provider:
 
 Provider Factory:
   • src/providers/index.ts
-  • createCouncilProviders() - creates all 4 council providers
+  • createCouncilProviders() - creates all configured council providers
   • createProviderWithFallback() - tries models in order until success
 ```
 
@@ -220,6 +221,7 @@ Provider Factory:
 │  │  interface Config {                                           │     │
 │  │    anthropicApiKey?: string                                   │     │
 │  │    openaiApiKey?: string                                      │     │
+│  │    geminiApiKey?: string                                      │     │
 │  │    xaiApiKey?: string                                         │     │
 │  │    groqApiKey?: string                                        │     │
 │  │    timeoutMs: number (default: 30000)                         │     │
@@ -360,7 +362,7 @@ Provider Factory:
 │  │    → Formatted response with confidence                       │     │
 │  │                                                               │     │
 │  │  $ second-brain --test-providers                              │     │
-│  │    → Test all 4 Council providers                             │     │
+│  │    → Test all Council providers                               │     │
 │  │    → Show connectivity status                                 │     │
 │  │                                                               │     │
 │  │  $ second-brain --test-provider <name>                        │     │
@@ -659,6 +661,10 @@ second-brain/
 │   │   │   ├── index.ts             [OpenAIProvider class]
 │   │   │   └── index.test.ts
 │   │   │
+│   │   ├── gemini/
+│   │   │   ├── index.ts             [GeminiProvider class]
+│   │   │   └── index.test.ts
+│   │   │
 │   │   ├── xai/
 │   │   │   ├── index.ts             [XAIProvider class]
 │   │   │   └── index.test.ts
@@ -734,6 +740,7 @@ LLM Integration:
   • ai (Vercel AI SDK core)
   • @ai-sdk/anthropic (Claude models)
   • @ai-sdk/openai (GPT models)
+  • @ai-sdk/google (Gemini models)
   • @ai-sdk/xai (Grok models)
   • @ai-sdk/groq (Llama models via Groq)
 
@@ -760,7 +767,7 @@ Development:
 ```
 1. Provider Pattern
    • Unified Provider interface
-   • Multiple implementations (Anthropic, OpenAI, xAI, Groq)
+   • Multiple implementations (Anthropic, OpenAI, Gemini, xAI, Groq)
    • Model-agnostic provider classes
 
 2. Strategy Pattern
@@ -789,7 +796,7 @@ Development:
 **MVP Complete!** Phases 1-6 are fully implemented. Second Brain can now:
 - Accept user questions via CLI (`second-brain ask "question"`)
 - Pre-process with Personal Brain
-- Query 4 AI models in parallel (Council)
+- Query multiple AI models in parallel (Council)
 - Synthesize consensus from responses
 - Post-process and format final answer
 - Display with confidence indicators and timing
@@ -856,6 +863,7 @@ Users can edit `src/config.ts` to:
 # Required (at least one provider)
 ANTHROPIC_API_KEY=sk-ant-...
 OPENAI_API_KEY=sk-...
+GEMINI_API_KEY=AIza...
 XAI_API_KEY=xai-...
 GROQ_API_KEY=gsk_...
 
