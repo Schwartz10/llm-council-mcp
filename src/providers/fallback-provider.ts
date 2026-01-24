@@ -14,7 +14,7 @@ export class FallbackProvider implements Provider {
     this.name = name;
     this.providers = providers;
     this.cooldownMs = cooldownMs;
-    this.failureTimestamps = new Array(providers.length).fill(undefined);
+    this.failureTimestamps = new Array<number | undefined>(providers.length).fill(undefined);
     this.lastSuccessIndex = 0;
   }
 
@@ -32,7 +32,9 @@ export class FallbackProvider implements Provider {
 
   private getCandidateIndexes(): number[] {
     const indexes = Array.from({ length: this.providers.length }, (_, i) => i);
-    const rotated = indexes.slice(this.lastSuccessIndex).concat(indexes.slice(0, this.lastSuccessIndex));
+    const rotated = indexes
+      .slice(this.lastSuccessIndex)
+      .concat(indexes.slice(0, this.lastSuccessIndex));
     const healthy = rotated.filter((index) => this.isHealthy(index));
     if (healthy.length > 0) {
       return healthy;

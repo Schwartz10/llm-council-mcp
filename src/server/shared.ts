@@ -26,13 +26,13 @@ let councilInitialized = false;
 /**
  * Initialize Council providers
  */
-export async function initializeCouncil(): Promise<void> {
+export function initializeCouncil(): void {
   if (councilInitialized) {
     return;
   }
 
   try {
-    councilProviders = await createCouncilProviders();
+    councilProviders = createCouncilProviders();
     councilInitialized = true;
     console.error(`✓ Council initialized with ${councilProviders.length} models`);
   } catch (error) {

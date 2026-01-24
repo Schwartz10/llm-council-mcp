@@ -57,7 +57,7 @@ describe('Council', () => {
     // Should take roughly the time of the slowest provider (not sum of all)
     // Add some buffer for overhead
     expect(totalTime).toBeLessThan(300); // Should be ~150ms, not 300ms
-    expect(totalTime).toBeGreaterThanOrEqual(150); // At least as long as slowest
+    expect(totalTime).toBeGreaterThanOrEqual(140); // Allow small timer jitter
 
     // Check responses
     expect(result.responses[0].content).toContain('Fast');

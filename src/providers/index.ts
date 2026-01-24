@@ -46,7 +46,7 @@ function createProvider(
  * This ensures that if a primary model (like gpt-5.2) requires special access,
  * we automatically fall back to more widely available models (like gpt-4o).
  */
-export async function createCouncilProviders(): Promise<Provider[]> {
+export function createCouncilProviders(): Provider[] {
   const providers: Provider[] = [];
 
   for (const config of COUNCIL_MODELS) {
@@ -63,7 +63,7 @@ export async function createCouncilProviders(): Promise<Provider[]> {
     }
 
     // Try to create provider with fallback support
-    const provider = await createProviderWithFallback(config);
+    const provider = createProviderWithFallback(config);
 
     if (provider) {
       providers.push(provider);
@@ -83,9 +83,9 @@ export async function createCouncilProviders(): Promise<Provider[]> {
  * @param testPrompt - Optional test prompt to verify the provider works
  * @returns Provider instance or null if all models fail
  */
-export async function createProviderWithFallback(
+export function createProviderWithFallback(
   modelConfig: (typeof COUNCIL_MODELS)[number]
-): Promise<Provider | null> {
+): Provider | null {
   if (!modelConfig.apiKey) {
     return null;
   }
