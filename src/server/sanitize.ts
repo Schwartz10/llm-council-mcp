@@ -165,11 +165,15 @@ export function detectSensitiveData(text: string): {
  * @param text - The text to redact sensitive data from
  * @returns Redacted text with sensitive patterns replaced
  */
-export function redactSensitiveData(text: string): string {
+export function redactSensitiveData(
+  text: string,
+  options?: { redactEmails?: boolean }
+): string {
   if (!text) {
     return '';
   }
 
+  const redactEmails = options?.redactEmails !== false;
   let redacted = text;
   const patterns = getSensitivePatterns();
 
@@ -188,6 +192,10 @@ export function redactSensitiveData(text: string): string {
     redacted = redacted.replace(pattern, '[REDACTED_PRIVATE_KEY]');
   });
 
+  if (redactEmails) {
+    redacted = redacted.replace(patterns.emails, '[REDACTED_EMAIL]');
+  }
+
   return redacted;
 }
 
@@ -197,7 +205,10 @@ export function redactSensitiveData(text: string): string {
  * @param text - The response text to sanitize
  * @returns Sanitized text with sensitive data redacted and detection warnings
  */
-export function sanitizeCouncilResponse(text: string): {
+export function sanitizeCouncilResponse(
+  text: string,
+  options?: { redactEmails?: boolean }
+): {
   text: string;
   redacted: boolean;
   warnings: string[];
@@ -206,6 +217,7 @@ export function sanitizeCouncilResponse(text: string): {
     return { text: '', redacted: false, warnings: [] };
   }
 
+  const redactEmails = options?.redactEmails !== false;
   const detection = detectSensitiveData(text);
   const warnings: string[] = [];
   let redacted = false;
@@ -226,14 +238,18 @@ export function sanitizeCouncilResponse(text: string): {
   }
 
   if (detection.hasEmails) {
-    warnings.push('Email addresses detected (not redacted)');
-    // Note: We detect but don't redact emails as they may be legitimate content
+    if (redactEmails) {
+      warnings.push('Email addresses detected and redacted');
+      redacted = true;
+    } else {
+      warnings.push('Email addresses detected (not redacted)');
+    }
   }
 
   if (redacted) {
     console.warn('⚠️ Sensitive data redacted from Council response:', warnings.join(', '));
     return {
-      text: redactSensitiveData(text),
+      text: redactSensitiveData(text, { redactEmails }),
       redacted: true,
       warnings,
     };

@@ -5,7 +5,7 @@ import { dirname, join } from 'path';
 // Load environment variables
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-dotenv.config({ path: join(__dirname, '..', '.env') });
+dotenv.config({ path: join(__dirname, '..', '.env'), quiet: true });
 
 export interface Config {
   anthropicApiKey?: string;
@@ -15,6 +15,13 @@ export interface Config {
   timeoutMs: number;
   debug: boolean;
   brainModel: string;
+  redactEmails: boolean;
+  attachmentMaxBytes: number;
+  attachmentMaxTotalBytes: number;
+  attachmentMaxCount: number;
+  attachmentAllowedMediaTypes: string[];
+  attachmentAllowUrls: boolean;
+  fallbackCooldownMs: number;
 }
 
 export interface ModelConfig {
@@ -35,6 +42,23 @@ function getEnvVar(name: string): string | undefined {
   return value;
 }
 
+function getEnvInt(name: string, fallback: number): number {
+  const value = getEnvVar(name);
+  if (!value) {
+    return fallback;
+  }
+  const parsed = parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+}
+
+const DEFAULT_ATTACHMENT_MEDIA_TYPES = [
+  'text/*',
+  'application/json',
+  'application/pdf',
+  'application/zip',
+  'image/*',
+];
+
 /**
  * Returns a list of missing API keys
  */
@@ -52,14 +76,28 @@ export function getMissingApiKeys(): string[] {
  * API keys are optional - missing keys will result in those providers being unavailable
  */
 export function loadConfig(): Config {
+  const mediaTypesRaw = getEnvVar('SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES');
+  const attachmentAllowedMediaTypes =
+    mediaTypesRaw
+      ?.split(',')
+      .map((value) => value.trim())
+      .filter((value) => value.length > 0) ?? DEFAULT_ATTACHMENT_MEDIA_TYPES;
+
   return {
     anthropicApiKey: getEnvVar('ANTHROPIC_API_KEY'),
     openaiApiKey: getEnvVar('OPENAI_API_KEY'),
     xaiApiKey: getEnvVar('XAI_API_KEY'),
     groqApiKey: getEnvVar('GROQ_API_KEY'),
-    timeoutMs: parseInt(process.env.SECOND_BRAIN_TIMEOUT_MS || '30000', 10),
+    timeoutMs: getEnvInt('SECOND_BRAIN_TIMEOUT_MS', 30000),
     debug: process.env.SECOND_BRAIN_DEBUG === 'true',
     brainModel: getEnvVar('BRAIN_MODEL') || 'anthropic/claude-sonnet-4-5-20250929',
+    redactEmails: process.env.SECOND_BRAIN_REDACT_EMAILS !== 'false',
+    attachmentMaxBytes: getEnvInt('SECOND_BRAIN_ATTACHMENT_MAX_BYTES', 5_000_000),
+    attachmentMaxTotalBytes: getEnvInt('SECOND_BRAIN_ATTACHMENT_MAX_TOTAL_BYTES', 20_000_000),
+    attachmentMaxCount: getEnvInt('SECOND_BRAIN_ATTACHMENT_MAX_COUNT', 5),
+    attachmentAllowedMediaTypes,
+    attachmentAllowUrls: process.env.SECOND_BRAIN_ATTACHMENT_ALLOW_URLS === 'true',
+    fallbackCooldownMs: getEnvInt('SECOND_BRAIN_FALLBACK_COOLDOWN_MS', 120000),
   };
 }
 

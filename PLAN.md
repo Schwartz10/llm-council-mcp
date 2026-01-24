@@ -977,6 +977,26 @@ Phase 9 is complete when:
 
 ---
 
+### Phase 10: MCP Hardening & Attachments ✅ **COMPLETE**
+
+**Tasks:**
+- [x] Add cancellable timeouts (AbortController) for provider calls
+- [x] Remove startup "probe" queries in provider fallback
+- [x] Normalize MCP handler errors to JSON-RPC error responses
+- [x] Redact emails by default (make configurable)
+- [x] Reject requests with missing/invalid Host or Origin
+- [x] Add attachment support to Council tool input
+- [x] Add tests for the new features
+
+**Verification:** ✅
+- [x] Provider timeouts abort in-flight requests
+- [x] MCP errors return JSON-RPC error responses
+- [x] Origin/Host validation enforced for all routes
+- [x] Attachments validated and forwarded to providers
+- [x] Updated tests cover new behaviors
+
+---
+
 ## File Structure
 
 ```
@@ -1103,6 +1123,7 @@ After each phase, verify:
 - [x] **Phase 6:** Full CLI flow works: ask question → see progress → get answer
 - [x] **Phase 7:** Daemon server running, CLI and MCP both work, Council returns critiques ✅ **Successfully tested with Claude Code - all 4 models responded in 19.7s**
 - [x] **Phase 9:** MCP spec compliance verified, security hardening complete, 62 tests passing ✅ **MVP COMPLETE**
+- [x] **Phase 10:** MCP hardening, attachments, JSON-RPC error normalization ✅
 - [ ] **Phase 8:** Eval harness can validate Council provides useful help (deferred post-MVP)
 
 **Note:** MVP is complete after Phase 9. Phase 8 evaluation is deferred for manual qualitative testing first.
@@ -1119,9 +1140,10 @@ After each phase, verify:
 6. ✅ **Phase 6** - CLI (refactored in Phase 7)
 7. ✅ **Phase 7** - Council Daemon & MCP Integration (HTTP transport)
 8. ✅ **Phase 9** - **MCP Spec Compliance & Security Hardening** ✅ **MVP COMPLETE**
-9. 📅 **Phase 8** - Evaluation (deferred until after MVP - manual testing first)
+9. ✅ **Phase 10** - MCP hardening, attachments, JSON-RPC errors
+10. 📅 **Phase 8** - Evaluation (deferred until after MVP - manual testing first)
 
-**🎉 MVP COMPLETE!** Phases 1-3, 7, 9
+**🎉 MVP COMPLETE!** Phases 1-3, 7, 9, 10
 - ✅ stdio, HTTP/Streamable, and SSE transport support
 - ✅ Comprehensive security hardening (rate limiting, sanitization, security headers)
 - ✅ 62 tests passing (40 security tests)

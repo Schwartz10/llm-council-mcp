@@ -8,7 +8,7 @@
  * This server uses Streamable HTTP transport for modern MCP clients.
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import { createMcpExpressApp } from '@modelcontextprotocol/sdk/server/express.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
@@ -16,6 +16,7 @@ import helmet from 'helmet';
 import { mcpServer, initializeCouncil, getCouncilProviders } from './shared.js';
 import { getMissingApiKeys, loadConfig } from '../config.js';
 import { mcpRateLimiter, healthCheckRateLimiter } from './rate-limit.js';
+import { validateOrigin } from './origin.js';
 
 // Load configuration
 const config = loadConfig();
@@ -40,46 +41,6 @@ app.use(
     crossOriginResourcePolicy: { policy: 'cross-origin' },
   })
 );
-
-/**
- * Origin validation middleware
- * Validates that requests come from localhost origins only
- */
-function validateOrigin(req: Request, res: Response, next: NextFunction): void {
-  const origin = req.get('Origin');
-  const host = req.get('Host');
-
-  // If no Origin header, check Host header
-  if (!origin) {
-    // Host header should be localhost or 127.0.0.1
-    if (host && (host.startsWith('localhost') || host.startsWith('127.0.0.1'))) {
-      return next();
-    }
-    console.warn(`⚠️ Suspicious request without Origin header from Host: ${host}`);
-    return next(); // Allow for now (createMcpExpressApp already validates Host)
-  }
-
-  // Validate Origin is localhost
-  const localhostPatterns = [
-    /^http:\/\/localhost(:\d+)?$/,
-    /^http:\/\/127\.0\.0\.1(:\d+)?$/,
-    /^https:\/\/localhost(:\d+)?$/,
-    /^https:\/\/127\.0\.0\.1(:\d+)?$/,
-  ];
-
-  const isValidOrigin = localhostPatterns.some((pattern) => pattern.test(origin));
-
-  if (!isValidOrigin) {
-    console.error(`⚠️ Blocked request from invalid Origin: ${origin}`);
-    res.status(403).json({
-      error: 'Forbidden',
-      message: 'Requests must originate from localhost',
-    });
-    return;
-  }
-
-  next();
-}
 
 // Apply origin validation to all routes
 app.use(validateOrigin);
@@ -108,42 +69,67 @@ app.get('/health', healthCheckRateLimiter, (_req: Request, res: Response) => {
 
 // MCP POST handler - stateless mode with streaming support (modern clients)
 app.post('/mcp', mcpRateLimiter, async (req: Request, res: Response) => {
-  // Create a new transport for each request (stateless mode)
-  const transport = new StreamableHTTPServerTransport({
-    sessionIdGenerator: undefined, // Stateless mode - no session IDs
-    enableJsonResponse: true,
-  });
+  try {
+    // Create a new transport for each request (stateless mode)
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined, // Stateless mode - no session IDs
+      enableJsonResponse: true,
+    });
 
-  // Clean up transport after request completes
-  res.on('close', () => {
-    void transport.close();
-  });
+    // Clean up transport after request completes
+    res.on('close', () => {
+      void transport.close();
+    });
 
-  // Connect the transport to the MCP server before handling the request
-  await mcpServer.connect(transport);
+    // Connect the transport to the MCP server before handling the request
+    await mcpServer.connect(transport);
 
-  // Handle the request (supports streaming responses)
-  await transport.handleRequest(req, res, req.body);
+    // Handle the request (supports streaming responses)
+    await transport.handleRequest(req, res, req.body);
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('MCP request failed:', errorMessage);
+    if (!res.headersSent) {
+      const errorPayload: Record<string, unknown> = {
+        jsonrpc: '2.0',
+        id: typeof req.body?.id === 'string' || typeof req.body?.id === 'number' ? req.body.id : null,
+        error: {
+          code: -32603,
+          message: 'Internal error',
+          ...(config.debug ? { data: { message: errorMessage } } : {}),
+        },
+      };
+      res.status(200).json(errorPayload);
+    }
+  }
 });
 
 // MCP GET handler - SSE transport for backwards compatibility (older clients)
 app.get('/mcp', mcpRateLimiter, async (_req: Request, res: Response) => {
-  // Log deprecation warning
-  console.error('⚠️ SSE transport is deprecated. Please upgrade to Streamable HTTP (POST /mcp).');
+  try {
+    // Log deprecation warning
+    console.error('⚠️ SSE transport is deprecated. Please upgrade to Streamable HTTP (POST /mcp).');
 
-  // Create SSE transport
-  const transport = new SSEServerTransport('/mcp', res);
+    // Create SSE transport
+    const transport = new SSEServerTransport('/mcp', res);
 
-  // Clean up transport when client disconnects
-  res.on('close', () => {
-    void transport.close();
-  });
+    // Clean up transport when client disconnects
+    res.on('close', () => {
+      void transport.close();
+    });
 
-  // Connect the transport to the MCP server
-  await mcpServer.connect(transport);
+    // Connect the transport to the MCP server
+    await mcpServer.connect(transport);
 
-  // Start the SSE stream
-  await transport.start();
+    // Start the SSE stream
+    await transport.start();
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    console.error('MCP SSE request failed:', errorMessage);
+    if (!res.headersSent) {
+      res.status(500).json({ error: 'Internal error' });
+    }
+  }
 });
 
 // Start server

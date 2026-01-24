@@ -9,6 +9,18 @@ export interface ProviderResponse {
   error?: string; // Optional error message if query failed
 }
 
+export interface ProviderAttachment {
+  filename?: string; // Optional filename for the attachment
+  mediaType: string; // IANA media type (e.g., "application/zip")
+  data?: string; // Base64 or data URL
+  url?: string; // http(s) URL to the file
+}
+
+export interface ProviderRequestOptions {
+  signal?: AbortSignal;
+  attachments?: ProviderAttachment[];
+}
+
 /**
  * Provider interface that all LLM providers must implement
  */
@@ -18,11 +30,11 @@ export interface Provider {
   /**
    * Query the provider with a prompt and get a complete response
    */
-  query(prompt: string): Promise<ProviderResponse>;
+  query(prompt: string, options?: ProviderRequestOptions): Promise<ProviderResponse>;
 
   /**
    * Query the provider with streaming response
    * Yields chunks of text as they arrive
    */
-  queryStream(prompt: string): AsyncIterable<string>;
+  queryStream(prompt: string, options?: ProviderRequestOptions): AsyncIterable<string>;
 }

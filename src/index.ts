@@ -77,6 +77,12 @@ program
  */
 async function handleAskCommand(question: string, serverUrl: string): Promise<void> {
   const startTime = Date.now();
+  let originHeader: string | undefined;
+  try {
+    originHeader = new URL(serverUrl).origin;
+  } catch {
+    originHeader = undefined;
+  }
 
   // Validate input
   if (!question || question.trim().length === 0) {
@@ -92,7 +98,10 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
     // Check server health
     const healthSpinner = new ProgressSpinner('Connecting to Council server...');
     try {
-      const healthResponse = await axios.get(`${serverUrl}/health`, { timeout: 5000 });
+      const healthResponse = await axios.get(`${serverUrl}/health`, {
+        timeout: 5000,
+        ...(originHeader ? { headers: { Origin: originHeader } } : {}),
+      });
       const health = healthResponse.data;
 
       if (!health.council.initialized) {
@@ -141,6 +150,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
       },
       {
         timeout: 120000, // 2 minute timeout for Council deliberation
+        ...(originHeader ? { headers: { Origin: originHeader } } : {}),
       }
     );
 
