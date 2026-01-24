@@ -1,6 +1,6 @@
 # Second Brain - Council Daemon Service
 
-A daemon service that provides parallel consultation with 4 frontier AI models. Multiple clients (CLI, Claude Code via MCP, or custom tools) can consult the Council when they need alternative perspectives, critiques, or help getting unstuck.
+A daemon service that provides parallel consultation with frontier AI models. Multiple clients (CLI, Claude Code via MCP, or custom tools) can consult the Council when they need alternative perspectives, critiques, or help getting unstuck.
 
 **Primary Use Case:** "Phone a Friend" - when an AI agent (like Claude Code) is uncertain or stuck, it can consult the Council for independent perspectives from multiple models.
 
@@ -25,18 +25,19 @@ A daemon service that provides parallel consultation with 4 frontier AI models. 
 │  • POST /mcp - MCP over streamable HTTP            │
 │  • GET /health - Health check                      │
 │                                                     │
-│  Council: 4 models query in parallel               │
+│  Council: models query in parallel                 │
 └─────────────────────────────────────────────────────┘
 ```
 
 ### The Council
 
-The Council consists of 4 frontier AI models that provide independent critiques:
+The Council consists of frontier AI models that provide independent critiques:
 
 1. **Claude Sonnet 4.5** (Anthropic) - with fallback to Sonnet 3.5
 2. **GPT-5.2 / GPT-4o** (OpenAI) - with automatic fallback chain
-3. **Grok 3 Beta** (xAI)
-4. **Llama 4 Maverick** (Groq) - with fallback to Llama 3.3
+3. **Gemini** (Google) - with fallback to Gemini 1.5 Pro
+4. **Grok 3 Beta** (xAI)
+5. **Llama 4 Maverick** (Groq) - with fallback to Llama 3.3
 
 All models are queried in parallel. If individual models fail, the Council continues with remaining models.
 
@@ -62,6 +63,7 @@ cp .env.example .env
 Required API keys (you need at least one):
 - `ANTHROPIC_API_KEY` - Get from [Anthropic Console](https://console.anthropic.com/)
 - `OPENAI_API_KEY` - Get from [OpenAI Platform](https://platform.openai.com/)
+- `GEMINI_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com/app/apikey)
 - `XAI_API_KEY` - Get from [xAI Console](https://console.x.ai/)
 - `GROQ_API_KEY` - Get from [Groq Console](https://console.groq.com/)
 
@@ -90,7 +92,7 @@ second-brain ask "What is the best way to handle errors in TypeScript?"
 
 The CLI will:
 1. Connect to the Council server
-2. Send your question to all 4 models in parallel
+2. Send your question to all configured models in parallel
 3. Display independent responses from each model
 4. Show timing and success metrics
 
@@ -295,7 +297,7 @@ Consult the Council via the Model Context Protocol.
 
 ## Performance
 
-- **Parallel execution**: All 4 models queried simultaneously
+- **Parallel execution**: All configured models queried simultaneously
 - **Typical response time**: 5-15 seconds for all models
 - **Timeout**: 30 seconds per model by default (configurable)
 - **Partial results**: Continues even if some models fail

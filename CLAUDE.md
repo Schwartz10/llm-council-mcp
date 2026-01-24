@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to 4 frontier models deliberating in parallel, then synthesizes a unified response.
+This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to frontier models deliberating in parallel, then synthesizes a unified response.
 
 **Goal:** Prove Second Brain answers are preferred >60% of the time vs best single model.
 
@@ -39,7 +39,7 @@ second-brain eval report           # Generate preference stats
 ## Architecture
 
 ```
-User → CLI → Personal Brain (pre-processing) → Council (4 models in parallel) → Consensus Module → Personal Brain (post-processing) → User
+User → CLI → Personal Brain (pre-processing) → Council (models in parallel) → Consensus Module → Personal Brain (post-processing) → User
 ```
 
 **See ARCHITECTURE.md for detailed ASCII diagrams and technical specifications.**
@@ -51,11 +51,12 @@ User → CLI → Personal Brain (pre-processing) → Council (4 models in parall
 - **Testing:** Vitest
 - **Code Quality:** ESLint + Prettier
 
-### The Four Council Models
+### Council Models
 1. Claude Sonnet 4.5 (Anthropic) - with fallback to Sonnet 3.5
 2. GPT-5.2 (OpenAI) - with fallback to GPT-4o → GPT-4 Turbo
-3. Grok 3 Beta (xAI)
-4. Llama 4 Maverick (via Groq) - `meta-llama/llama-4-maverick-17b-128e-instruct` with fallback to Llama 3.3
+3. Gemini (Google) - with fallback to Gemini 1.5 Pro
+4. Grok 3 Beta (xAI)
+5. Llama 4 Maverick (via Groq) - `meta-llama/llama-4-maverick-17b-128e-instruct` with fallback to Llama 3.3
 
 ### Personal Brain
 - Default: Claude Sonnet 4.5 (with fallback to Sonnet 3.5)
@@ -111,6 +112,7 @@ interface ProviderResponse {
 Each provider has its own directory with a model-agnostic implementation:
 - `providers/anthropic/index.ts` - AnthropicProvider class
 - `providers/openai/index.ts` - OpenAIProvider class
+- `providers/gemini/index.ts` - GeminiProvider class
 - `providers/xai/index.ts` - XAIProvider class
 - `providers/groq/index.ts` - GroqProvider class
 
@@ -123,12 +125,12 @@ Each provider class:
 - Supports both `query()` and `queryStream()` methods
 
 Factory functions (`src/providers/index.ts`):
-- `createCouncilProviders()` - creates all 4 council providers with fallback support
+- `createCouncilProviders()` - creates all configured council providers with fallback support
 - `createProviderWithFallback()` - tries models in order until one succeeds
 
 ### Council Module (`src/council/`) - Phase 3 ✅
-Orchestrates parallel querying of the 4 Council models:
-- Uses `Promise.allSettled()` to query all 4 providers simultaneously
+Orchestrates parallel querying of the Council models:
+- Uses `Promise.allSettled()` to query all configured providers simultaneously
 - 30s timeout per provider (configurable)
 - Handles partial failures gracefully (continues if providers fail)
 - Emits progress events via callbacks for real-time UI updates
@@ -151,7 +153,7 @@ interface ConsensusResult {
 }
 ```
 
-**MVP Strategy (to be implemented):** SimpleSynthesis sends all 4 responses to Personal Brain with a synthesis prompt that:
+**MVP Strategy (to be implemented):** SimpleSynthesis sends all responses to Personal Brain with a synthesis prompt that:
 1. Combines insights from all models
 2. Identifies agreement vs disagreement patterns
 3. Produces confidence level based on consensus
@@ -215,6 +217,7 @@ This module is separate from production code and used only for validation.
 Required API keys (see `.env.example`):
 - `ANTHROPIC_API_KEY` - Anthropic API key for Claude models
 - `OPENAI_API_KEY` - OpenAI API key for GPT models
+- `GEMINI_API_KEY` - Google API key for Gemini models
 - `XAI_API_KEY` - xAI API key for Grok models
 - `GROQ_API_KEY` - Groq API key for Llama models
 

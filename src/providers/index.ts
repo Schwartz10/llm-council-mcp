@@ -1,5 +1,6 @@
 import { COUNCIL_MODELS } from '../config.js';
 import { AnthropicProvider } from './anthropic/index.js';
+import { GeminiProvider } from './gemini/index.js';
 import { GroqProvider } from './groq/index.js';
 import { OpenAIProvider } from './openai/index.js';
 import { Provider } from './types.js';
@@ -23,6 +24,8 @@ function createProvider(
       return new AnthropicProvider(apiKey, modelId, displayName);
     case 'openai':
       return new OpenAIProvider(apiKey, modelId, displayName);
+    case 'gemini':
+      return new GeminiProvider(apiKey, modelId, displayName);
     case 'xai':
       return new XAIProvider(apiKey, modelId, displayName);
     case 'groq':
