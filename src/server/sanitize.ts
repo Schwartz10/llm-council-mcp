@@ -259,3 +259,4 @@ export function sanitizeCouncilResponse(
   // Return warnings even if nothing was redacted (e.g., email detection)
   return { text, redacted: false, warnings };
 }
+
