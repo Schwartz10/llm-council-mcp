@@ -8,7 +8,7 @@ This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberatio
 
 **Goal:** Prove Second Brain answers are preferred >60% of the time vs best single model.
 
-**Current Status:** Phase 3 Complete (Brain pre-processing + Council parallel querying)
+**Current Status:** Phase 11.2 Complete (Council daemon with structured synthesis and MCP tool improvements)
 
 ## Documentation
 
@@ -131,7 +131,7 @@ Factory functions (`src/providers/index.ts`):
 ### Council Module (`src/council/`) - Phase 3 ✅
 Orchestrates parallel querying of the Council models:
 - Uses `Promise.allSettled()` to query all configured providers simultaneously
-- 30s timeout per provider (configurable)
+- No automatic timeout; supports user cancellation via AbortSignal
 - Handles partial failures gracefully (continues if providers fail)
 - Emits progress events via callbacks for real-time UI updates
 - Returns `DeliberationResult` with all responses and metadata (latency, success/failure counts)
@@ -223,7 +223,6 @@ Required API keys (see `.env.example`):
 
 Optional:
 - `BRAIN_MODEL` (default: `anthropic/claude-sonnet-4-5-20250929`) - Personal Brain model identifier
-- `SECOND_BRAIN_TIMEOUT_MS` (default: `30000`) - Timeout in milliseconds per provider
 - `SECOND_BRAIN_DEBUG` (default: `false`) - Enable debug logging
 
 ## Working with PLAN.md
