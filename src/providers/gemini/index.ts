@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText, streamText } from 'ai';
-import { Provider, ProviderResponse } from '../types.js';
+import { Provider, ProviderRequestOptions, ProviderResponse } from '../types.js';
 
 /**
  * Gemini provider - model-agnostic wrapper for any Gemini model
@@ -16,13 +16,14 @@ export class GeminiProvider implements Provider {
     this.name = displayName || `Gemini (${modelId})`;
   }
 
-  async query(prompt: string): Promise<ProviderResponse> {
+  async query(prompt: string, options?: ProviderRequestOptions): Promise<ProviderResponse> {
     const startTime = Date.now();
 
     try {
       const result = await generateText({
         model: this.client(this.modelId),
         prompt,
+        abortSignal: options?.signal,
       });
 
       const latencyMs = Date.now() - startTime;
@@ -41,11 +42,12 @@ export class GeminiProvider implements Provider {
     }
   }
 
-  async *queryStream(prompt: string): AsyncIterable<string> {
+  async *queryStream(prompt: string, options?: ProviderRequestOptions): AsyncIterable<string> {
     try {
       const result = streamText({
         model: this.client(this.modelId),
         prompt,
+        abortSignal: options?.signal,
       });
 
       // Stream text chunks as they arrive

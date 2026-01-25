@@ -1,12 +1,12 @@
-# Second Brain MVP Implementation Plan
+# Second Brain Implementation Plan
 
 ## Overview
 
-Build a Council daemon service that multiple AI agents can consult when they need help. The Council consists of 4 frontier AI models that provide independent critiques and suggestions. Clients (CLI, Claude Code via MCP, or other tools) send questions to the Council and receive parallel responses from all models.
+A Council daemon service that multiple AI agents can consult when they need help. The Council consists of 4 frontier AI models that provide independent critiques and suggestions via MCP protocol.
 
 **Primary Use Case:** "Phone a Friend" - when an AI agent (like Claude Code) is uncertain or stuck, it can consult the Council for alternative perspectives, corrections, and suggestions.
 
-**Goal:** Provide a valuable multi-model consultation service that helps AI agents get unstuck and make better decisions.
+**Current Status:** ✅ **MVP COMPLETE** - All core functionality implemented, tested, and documented
 
 ## Architecture
 
@@ -40,7 +40,7 @@ Flow: Client → Council → 4 Models (parallel) → Critiques → Client
 - **Language:** TypeScript/Node.js (single package)
 - **LLM SDKs:** Vercel AI SDK (`@ai-sdk/*`) for unified provider interface
 - **Server:** Express.js
-- **MCP:** `@modelcontextprotocol/sdk` (SSE transport)
+- **MCP:** `@modelcontextprotocol/sdk` (stdio, HTTP streamable, SSE transports)
 - **CLI:** Simple HTTP client
 - **Config:** Environment variables only (.env)
 
@@ -52,948 +52,871 @@ Flow: Client → Council → 4 Models (parallel) → Critiques → Client
 
 ---
 
-## Implementation Phases
+## Completed Phases Summary
 
-### Phase 1: Project Setup & Provider Integration
-**Files to create:**
-- `package.json` - dependencies: `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@ai-sdk/xai`, `@ai-sdk/groq`, `commander`, `dotenv`, `ora` (spinner)
-- `tsconfig.json` - strict mode, ES modules
-- `.env.example` - template for API keys
-- `src/index.ts` - CLI entry point
-- `src/config.ts` - load env vars, validate API keys, define council model configurations with fallback support
+### ✅ Phase 1: Project Setup & Provider Integration
+- TypeScript project with ES modules
+- 4 AI provider integrations (Anthropic, OpenAI, xAI, Groq) with fallback support
+- Configuration system with graceful API key handling
+- Code quality tooling (ESLint, Prettier)
 
-**Tasks:**
-- [x] Initialize npm project with TypeScript
-  - Configured ES modules in package.json (`"type": "module"`)
-  - Added npm scripts for dev and test:providers
-- [x] Install Vercel AI SDK providers for all 4 models
-  - Installed: `@ai-sdk/anthropic`, `@ai-sdk/openai`, `@ai-sdk/xai`, `@ai-sdk/groq`
-  - Installed core `ai` package for unified interface
-  - Installed dev dependencies: `typescript`, `tsx`, `@types/node`
-- [x] Create config loader that validates all 4 API keys exist
-  - **Changed approach:** Made API keys optional with warnings instead of errors
-  - Config now returns `undefined` for missing API keys
-  - Added `getMissingApiKeys()` helper function
-  - Included optional config: timeout and debug flags
-- [x] Create simple test script that pings each provider to verify connectivity
-  - Fixed TypeScript errors: removed `maxTokens` parameter (not supported in Vercel AI SDK v3+)
-  - Fixed Claude Sonnet model ID: `claude-sonnet-4-5-20250929` (not `claude-sonnet-4.5-20250929`)
-  - Updated OpenAI model to GPT-5.2 (key: `openai/gpt-5-2`, model ID: `gpt-5.2`) as specified in requirements
-  - Fixed xAI Grok model ID: `grok-3-beta` (updated from `grok-beta` based on xAI API documentation)
-  - **Architecture decision: Updated to Llama 4 Maverick** (`meta-llama/llama-4-maverick-17b-128e-instruct`) - the most capable Llama model with 128 experts, optimized for reasoning and coding tasks
-  - **Architecture decision: Removed Perplexity from council** - Reduced from 5 to 4 models. Perplexity's model is Llama-based, creating redundancy without architectural diversity. Better to have 4 genuinely different models than 5 with overlap.
-  - Added spinner UI with ora for real-time feedback
-  - **Extra feature:** Added `--test-provider <provider>` flag to test individual providers (e.g., `--test-provider anthropic/claude-sonnet-4-5`)
-  - Refactored provider tests into reusable `PROVIDER_TESTS` array for maintainability
-  - Created `README.md` with comprehensive project description, setup instructions, and usage guide
-  - Added `CliOptions` interface to properly type Commander.js options and fix ESLint errors
-  - Added `test:provider` npm script for easier command execution
-  - Updated README to use npm scripts instead of direct `npx tsx` commands
-  - Documented all available npm scripts in README Development section
-  - **Improved error handling:**
-    - Show warnings (not errors) for missing API keys
-    - Skip providers with missing API keys when testing all providers
-    - Only error when testing a specific provider with a missing API key
-    - Added `configKey` field to each provider test for API key validation
-    - Test summary now shows connected/failed/skipped counts
-  - **Added code quality tooling:**
-    - Configured ESLint with TypeScript support
-    - Configured Prettier for code formatting
-    - Added `.prettierrc.json` and `.prettierignore`
-    - Added `eslint.config.js` with recommended TypeScript rules
-    - Added npm scripts: `lint`, `lint:fix`, `format`, `format:check`
-  - **Added `.gitignore`** to exclude node_modules, .env files, and build artifacts
-  - **Updated `.claude/settings.json`** to block reading .env files (security best practice)
-  - **Added model configuration to `src/config.ts`** - Single source of truth for all configurations (env vars + council models)
-    - Exported `COUNCIL_MODELS` array with user-editable defaults
-    - Each provider has array of models (primary + fallbacks)
-    - Models tried in order until one succeeds
-    - Test output shows which specific model connected (e.g., "GPT (using gpt-4o)")
-    - Enables graceful degradation when primary models require special access
-    - Cleaner architecture: all config in one file instead of split across config.ts and model-config.ts
-  - Verified with `npx tsc --noEmit` - no build errors
-  - Verified with `npm run lint` - no linting errors
-  - **Tested live:** Successfully ran `npm run test:provider -- anthropic/claude-sonnet-4-5` and `npm run test:provider -- xai/grok-beta` with valid API keys
-  - **Final test:** 4/4 providers connected! (Claude ✓, GPT ✓ [using gpt-4o fallback], Grok ✓, Llama 4 Maverick ✓)
+### ✅ Phase 2: Provider Abstraction Layer
+- Unified `Provider` interface for all LLM providers
+- Model-agnostic provider classes (accept modelId in constructor)
+- Factory functions with automatic fallback (`createProviderWithFallback`)
+- Both `query()` and `queryStream()` methods
+- 14 passing tests with Vitest
 
-**Verification:** Run `npm run test:providers` and see configured providers tested (missing API keys show warnings and are skipped).
+### ✅ Phase 3: Council Module
+- Parallel querying of all Council models using `Promise.allSettled()`
+- Graceful handling of partial failures (continues with remaining models)
+- 30s configurable timeout per provider
+- Progress callbacks for real-time UI updates
+- 8 passing tests
+
+### ✅ Phase 7: Daemon Server & MCP Integration
+- Express server with MCP SDK integration
+- HTTP Streamable transport (POST /mcp)
+- Shared Council accessible to all clients
+- Health check endpoint (GET /health)
+- `council_consult` tool for MCP clients
+- Refactored CLI as HTTP client
+- Verified with Claude Code integration (19.7s for 4 models)
+
+### ✅ Phase 9: MCP Compliance & Security
+- stdio transport (preferred for local development)
+- SSE transport (backwards compatibility)
+- Rate limiting (100 req/15min default)
+- Input/output sanitization (control chars, prompt injection, secret redaction)
+- Security headers via Helmet
+- Origin/Host validation
+- 40 security tests
+- Complete documentation (SECURITY.md, MCP_SETUP.md)
+- 62 total tests passing
+
+### ✅ Phase 10: MCP Hardening & Attachments
+- Cancellable timeouts with AbortController
+- JSON-RPC error normalization
+- Enhanced Origin/Host validation
+- Attachment support in Council tool
+- Email redaction (configurable)
+
+### 📦 Deprecated Phases
+- **Phase 4 (Consensus)** - Removed in favor of simpler client-side synthesis
+- **Phase 5 (Brain Post-processing)** - Removed in favor of raw critique responses
+- **Phase 6 (Original CLI)** - Replaced with HTTP client in Phase 7
 
 ---
 
-### Phase 2: Provider Abstraction Layer
-**Files to create:**
-- `src/providers/index.ts` - export unified interface and all model implementations
-- `src/providers/types.ts` - `Provider` interface, `ProviderResponse` type
-- `src/providers/anthropic/index.ts` - Shared Anthropic API logic (client, error handling, latency tracking)
-- `src/providers/anthropic/claude-sonnet-4-5.ts` - Claude Sonnet 4.5 implementation
-- `src/providers/openai/index.ts` - Shared OpenAI API logic
-- `src/providers/openai/gpt-5-2.ts` - GPT-5.2 implementation
-- `src/providers/xai/index.ts` - Shared xAI API logic
-- `src/providers/xai/grok.ts` - Grok implementation
-- `src/providers/groq/index.ts` - Shared Groq API logic
-- `src/providers/groq/llama.ts` - Llama 4 Maverick implementation (`meta-llama/llama-4-maverick-17b-128e-instruct`)
+## Next Steps / Active Development
 
-**Architecture:**
-Each provider directory contains:
-- `index.ts` - Shared logic: API client setup, common error handling, latency tracking, response formatting
-- `<model-name>.ts` - Model-specific implementation: model ID, parameters, any model-specific handling
+### Phase 11: Council Tool Improvements 🚀 **IN PROGRESS**
 
-This structure allows:
-- Code reuse across models from the same provider
-- Easy addition of new models (e.g., `claude-opus-4-5.ts`, `gpt-4.ts`)
-- Clear separation between provider infrastructure and model specifics
+**Timeline:** Today (focused sprint)
+**Goal:** Fix timeout issue and enhance council tool with synthesis and context validation
 
-**Interface:**
-```typescript
-interface Provider {
-  name: string;  // e.g., "Claude Sonnet 4.5", "GPT-5.2"
-  query(prompt: string): Promise<ProviderResponse>;
-  queryStream(prompt: string): AsyncIterable<string>;
-}
+**📋 Plan Review** (2026-01-24)
 
-interface ProviderResponse {
-  content: string;
-  provider: string;  // Human-readable name
-  latencyMs: number;
-  tokensUsed?: number;
-}
-```
-
-**Tasks:**
-- [x] Define Provider interface with `query()` and `queryStream()` methods
-  - Created `src/providers/types.ts` with Provider interface and ProviderResponse type
-- [x] Create provider directory structure (anthropic/, openai/, xai/, groq/)
-  - Used simplified structure: each provider has only `index.ts` (no separate model files)
-  - **Architecture decision:** Made providers model-agnostic - they accept modelId as constructor parameter
-  - This simplifies the code and makes it easier to test fallback models
-- [x] Implement shared logic in each provider's index.ts
-  - Each provider class handles API client setup, error handling, and latency tracking
-  - All providers use Vercel AI SDK (`generateText` and `streamText`)
-- [x] Implement model-specific wrappers for all 4 models
-  - Created AnthropicProvider, OpenAIProvider, XAIProvider, and GroqProvider
-  - Each provider is model-agnostic and receives modelId in constructor
-- [x] Each wrapper should handle errors gracefully and return structured response
-  - Added try-catch blocks with descriptive error messages
-  - Enhanced error messages include latency information
-- [x] Add latency tracking to each query
-  - All providers track start/end time and include latencyMs in response
-- [x] Export all model implementations from `src/providers/index.ts`
-  - Created factory functions: `createCouncilProviders()` and `createProviderWithFallback()`
-  - `createCouncilProviders()` creates providers for all configured models
-  - `createProviderWithFallback()` tries models in order until one succeeds
-- [x] Set up test infrastructure
-  - Installed Vitest as testing framework
-  - Created `vitest.config.ts` with 30s timeout for API calls
-  - Added `npm run test` and `npm run test:watch` scripts
-- [x] Write unit tests for each provider
-  - Created `src/providers/test-helpers.ts` with test configuration
-  - Used cheaper/faster models for testing (e.g., gpt-4o-mini, claude-sonnet-4-5-20250929)
-  - Wrote concise tests for each provider: creation, query, and error handling
-  - All 14 tests passing (5 test files)
-- [x] Implement queryStream() for all providers
-  - Used Vercel AI SDK's `streamText` function
-  - Streams text chunks as they arrive for real-time UI updates
-- [x] Final verification
-  - ✓ Build check: `npx tsc --noEmit` - no errors
-  - ✓ Linter: `npm run lint` - no errors
-  - ✓ Tests: `npm run test` - 14/14 tests passing
-
-**Verification:** ✅ All provider tests passing (14/14). Each provider can query successfully and return structured responses.
+Council consultation recommended enhancements:
+- **Task 11.2 (phone_council)**: Added structured synthesis extraction (agreement/disagreement/insights, confidence scoring)
+- **Task 11.3 (context sharing)**: Upgraded from docs-only to implementation + validation tools
+- **Individual model tool (phone_friend)**: Deferred to Phase 14 due to fuzzy matching complexity
 
 ---
 
-### Phase 3: Personal Brain (Pre-processing) + Council Module
-**Files to create:**
-- `src/brain/index.ts` - Personal Brain orchestrator
-- `src/brain/types.ts` - `BrainConfig`
-- `src/brain/prompts.ts` - prompt templates for pre-processing
-- `src/council/index.ts` - main Council orchestrator
-- `src/council/types.ts` - `CouncilRequest`, `CouncilResponse`, `DeliberationResult`
+#### Task 11.1: Fix Timeout Issue ⚡ **HIGHEST PRIORITY**
 
-**Architecture Decision:**
-Brain and Council are built together in this phase but remain **architecturally separate modules**. They should not be tightly coupled.
+**Problem:** 30s timeout causes failures on long responses, especially with complex prompts
 
-**Personal Brain Responsibilities (Pre-processing):**
-1. Take user's raw question
-2. Clarify ambiguities and add context if needed
-3. Format as clear, well-structured prompt for Council
-4. Configurable with any Provider (default: Claude Sonnet 4.5)
-5. Future: Can monitor Council and intervene if models get stuck
+**Solution:** Remove automatic timeout, only respect user cancellation
 
-**Council Behavior:**
-1. Accept a prompt (pre-processed by Personal Brain)
-2. Query all 4 providers in parallel using `Promise.allSettled()`
-3. Handle partial failures gracefully (if 1 model fails, continue with rest)
-4. Return array of all responses with metadata
-5. Emit progress events for CLI streaming UI
-
-**Tasks:**
-- [x] Add `BRAIN_MODEL` configuration to `src/config.ts`
-  - Added `brainModel` field to Config interface
-  - Defaults to Claude Sonnet 4.5 (`anthropic/claude-sonnet-4-5-20250929`)
-  - Can be overridden via `BRAIN_MODEL` environment variable
-  - Created `BRAIN_MODEL_CONFIG` with fallback support (Sonnet 4.5 → Sonnet 3.5)
-- [x] Create Brain class configurable with any Provider
-  - Created `src/brain/types.ts` with BrainConfig interface
-  - Created `src/brain/prompts.ts` with pre-processing prompt templates
-  - Created `src/brain/index.ts` with Brain class implementation
-- [x] Implement `prepareForCouncil(userQuery: string): Promise<string>`
-  - Implemented pre-processing that clarifies ambiguities and adds context
-  - Falls back to original query if pre-processing fails (graceful degradation)
-  - Includes debug logging for transparency
-- [x] Write tests for Brain pre-processing
-  - Created `src/brain/brain.test.ts` with 5 test cases
-  - Tests simple queries, ambiguous queries, complex technical queries
-  - Tests fallback behavior when pre-processing fails
-  - All tests passing with real Anthropic API calls
-- [x] Create Council class that takes array of Providers
-  - Created `src/council/types.ts` with DeliberationResult and ProgressCallback types
-  - Created `src/council/index.ts` with Council class implementation
-  - Added optional `error` field to ProviderResponse for failure handling
-- [x] Implement `deliberate(prompt: string): Promise<DeliberationResult>`
-  - Uses `Promise.allSettled()` for parallel execution
-  - 30s timeout per provider (configurable)
-  - Graceful handling of partial failures (continues with successful responses)
-  - Progress callbacks for real-time UI updates
-  - Returns metadata: totalLatencyMs, successCount, failureCount
-- [x] Write tests for Council parallel querying
-  - Created `src/council/council.test.ts` with 8 test cases
-  - Tests parallel execution (verifies time < sum of all providers)
-  - Tests partial failure handling (continues with remaining providers)
-  - Tests timeout behavior
-  - Tests progress callbacks for both success and failure
-  - All tests passing with mock providers
-- [x] Verify with `npx tsc --noEmit` - no build errors
-  - Fixed unused import (PreProcessingResult)
-  - Build passes cleanly
-- [x] Verify with `npm run lint` - no linting errors
-  - Fixed async/await issues in test mocks
-  - Fixed TypeScript type safety issues with progress callbacks
-  - Fixed prettier formatting
-  - Linter passes with no errors or warnings
-
-**Verification:** ✅ Complete
-- ✅ Brain pre-processing tests pass (5/5 tests)
-- ✅ Council can query all 4 providers in parallel and return responses (8/8 tests)
-- ✅ Both modules are separate and loosely coupled
-- ✅ All 27 tests passing (7 test files)
-- ✅ Build check passing (npx tsc --noEmit)
-- ✅ Linter passing (npm run lint)
-
----
-
-### Phase 4: Consensus Module
-**Files to create:**
-- `src/consensus/index.ts` - consensus orchestrator
-- `src/consensus/types.ts` - `ConsensusResult`, `ConsensusStrategy`
-- `src/consensus/strategies/simple-synthesis.ts` - MVP strategy
-
-**Interface:**
-```typescript
-interface ConsensusResult {
-  synthesis: string;           // The unified answer
-  agreement: boolean;          // Did models broadly agree?
-  confidence: number;          // 0-1 confidence score
-  dissent?: string;            // Notable disagreements
-}
-
-interface ConsensusStrategy {
-  name: string;
-  synthesize(responses: ProviderResponse[], originalPrompt: string): Promise<ConsensusResult>;
-}
-```
-
-**MVP Strategy (Simple Synthesis):**
-The goal is for the Council to reach consensus **without** Personal Brain involvement. However, the Brain can be optionally used for synthesis if needed.
-
-1. Take all 4 Council responses
-2. **Option A (MVP):** Use Personal Brain for synthesis
-   - Send responses to Brain with synthesis prompt
-   - Brain identifies agreement patterns, confidence level, and dissent
-3. **Option B (Future):** Algorithmic consensus (no LLM)
-   - Compare responses for overlap/agreement
-   - Select best parts from each
-4. Return ConsensusResult
-
-**Synthesis Prompt Template (if using Brain):**
-```
-You are synthesizing answers from 4 different AI models to produce the best possible response.
-
-Original question: {prompt}
-
-Model responses:
-[Claude]: {response1}
-[GPT]: {response2}
-[Grok]: {response3}
-[Llama]: {response4}
-
-Synthesize these into a single, authoritative answer. Note any significant disagreements.
-Indicate your confidence level (high/medium/low) based on model agreement.
-```
-
-**Tasks:**
-- [x] Create ConsensusStrategy interface
-  - Created `src/consensus/types.ts` with ConsensusResult and ConsensusStrategy interfaces
-  - ConsensusResult includes: synthesis, agreement, confidence (0-1), and optional dissent
-- [x] Implement SimpleSynthesis strategy (using Brain for synthesis)
-  - Created `src/consensus/strategies/simple-synthesis.ts`
-  - Uses Brain to synthesize all Council responses
-  - Graceful fallback when synthesis fails (concatenates responses with low confidence)
-- [x] Design synthesis prompt that produces structured output
-  - Created `src/consensus/prompts.ts` with JSON-based synthesis prompt
-  - Prompts Brain to respond with structured JSON containing synthesis, agreement, confidence, and dissent
-  - JSON extraction handles markdown-wrapped responses
-- [x] Parse synthesis for agreement/confidence signals
-  - JSON parsing with validation for required fields
-  - Confidence score clamped to 0-1 range
-  - Robust error handling with fallback consensus
-- [x] Make it easy to add new strategies later (just add file to strategies/)
-  - Consensus orchestrator accepts any ConsensusStrategy via config
-  - Strategy swapping supported via `setStrategy()` method
-  - Clear separation between orchestrator and strategy implementation
-- [x] Write tests for consensus module
-  - Created `src/consensus/consensus.test.ts` with 10 comprehensive tests
-  - Tests cover: JSON parsing, markdown extraction, agreement/disagreement, confidence clamping, fallback behavior, strategy switching
-  - All 10 tests passing
-- [x] Verify with `npx tsc --noEmit` - no build errors
-  - Added `query()` method to Brain class for general-purpose queries
-  - Build passes cleanly with no TypeScript errors
-- [x] Verify with `npm run lint` - no linting errors
-  - Fixed all linting and formatting issues
-  - All files pass ESLint and Prettier checks
-
-**Verification:** ✅ Complete
-- ✅ All 10 consensus tests passing
-- ✅ SimpleSynthesis strategy works with mock Brain responses
-- ✅ JSON parsing handles both clean and markdown-wrapped responses
-- ✅ Fallback consensus works when synthesis fails
-- ✅ Strategy is swappable (tested in orchestrator tests)
-- ✅ All 37 tests passing (8 test files)
-- ✅ Build check passing (npx tsc --noEmit)
-- ✅ Linter passing (npm run lint)
-
----
-
-### Phase 5: Personal Brain (Post-processing)
-**Files to update:**
-- `src/brain/index.ts` - Add post-processing methods
-- `src/brain/prompts.ts` - Add post-processing prompt templates
-
-**Responsibilities:**
-Take ConsensusResult and format final response for user:
-1. Present synthesis clearly and conversationally
-2. Note confidence level appropriately
-3. Highlight any dissent or areas of disagreement
-4. Make the response feel cohesive and authoritative
-
-**Post-processing Flow:**
-```
-ConsensusResult → Brain.presentToUser() → Final formatted response
-```
-
-**Tasks:**
-- [x] Implement `presentToUser(consensus: ConsensusResult): Promise<string>`
-  - Takes ConsensusResult from Consensus module
-  - Formats it for clear presentation to user
-  - Includes confidence indicators
-  - Highlights dissent if present
-  - Graceful fallback to raw synthesis if post-processing fails
-- [x] Create post-processing prompt template
-  - Created `getPostProcessingPrompt()` in `src/brain/prompts.ts`
-  - Includes confidence labels (high/moderate/low) based on 0-1 score
-  - Formats agreement status and dissent information
-  - Instructs Brain to present information conversationally
-- [x] Write tests for post-processing
-  - Created 4 new tests in `src/brain/brain.test.ts`
-  - Test high confidence with agreement
-  - Test low confidence with dissent
-  - Test moderate confidence
-  - Test fallback behavior when post-processing fails
-- [x] Verify with `npx tsc --noEmit` - no build errors
-  - Build passes cleanly with no TypeScript errors
-- [x] Verify with `npm run lint` - no linting errors
-  - All files pass ESLint and Prettier checks
-
-**Verification:** ✅ Complete
-- ✅ All 4 post-processing tests passing
-- ✅ Brain formats consensus results appropriately for different confidence levels
-- ✅ Fallback works when post-processing fails (returns raw synthesis)
-- ✅ All 41 tests passing (8 test files)
-- ✅ Build check passing (npx tsc --noEmit)
-- ✅ Linter passing (npm run lint)
-
----
-
-### Phase 6: CLI Interface
-**Files to create:**
-- `src/cli/index.ts` - main CLI logic
-- `src/cli/ui.ts` - terminal UI helpers (spinners, colors)
-
-**Commands:**
-```bash
-second-brain ask "What is the best programming language for systems programming?"
-second-brain --test-providers  # Verify all API keys work
-second-brain --version
-```
-
-**UX Flow:**
-1. User runs `second-brain ask "question"`
-2. Show: "Personal Brain is preparing your question..."
-3. Show: "Consulting Claude... ✓"
-4. Show: "Consulting GPT... ✓" (etc, as each completes)
-5. Show: "Council is synthesizing..."
-6. Show: Final answer with confidence indicator
-
-**Tasks:**
-- [x] Set up Commander.js with `ask` command
-  - Added `ask <question>` command to src/index.ts
-  - Command orchestrates full Second Brain flow
-- [x] Implement streaming progress UI with ora spinners
-  - Created src/cli/ui.ts with ProgressSpinner class and formatting utilities
-  - Real-time progress updates as each Council member responds
-  - Success/failure indicators for each model
-- [x] Handle Ctrl+C gracefully
-  - Commander.js handles Ctrl+C by default
-  - Process exits cleanly on errors with proper exit codes
-- [x] Pretty-print final response with markdown support
-  - Created formatFinalResponse() with visual confidence bar
-  - Added colored output with chalk (green for high confidence, yellow for moderate, red for low)
-  - Confidence displayed as both label and visual bar
-- [x] Show timing info (total deliberation time)
-  - Added formatTiming() utility to display total time in seconds
-  - Tracks full flow from start to finish
-- [x] Wire up complete flow in src/cli/index.ts
-  - Brain pre-processing
-  - Council initialization and deliberation with progress callbacks
-  - Consensus synthesis
-  - Brain post-processing
-  - Error handling and validation
-- [x] Fix TypeScript export issues
-  - Changed consensus/index.ts to use `export type` for re-exporting interfaces
-- [x] Verify with `npx tsc --noEmit` - no build errors
-- [x] Verify with `npm run lint` - no linting errors
-
-**Verification:** ✅ Complete
-- ✅ End-to-end test successful with question "What is TypeScript?"
-- ✅ Brain initialized and pre-processed question
-- ✅ Council assembled with 4 models (2 succeeded, 2 failed gracefully)
-- ✅ Consensus synthesized with high confidence (0.95)
-- ✅ Brain post-processed and formatted final response
-- ✅ Total time: 57.5s
-- ✅ All progress indicators and UI elements working correctly
-- ✅ Confidence bar and timing displayed properly
-
----
-
-### Phase 7: Council Daemon Service & MCP Integration
-
-**Goal:** Transform Second Brain from a monolithic CLI tool into a daemon service that multiple clients can consult. The Council becomes a shared resource accessible via both HTTP (for CLI) and MCP/SSE (for Claude Code).
-
-**Files to create:**
-- `src/server/index.ts` - Express server with MCP integration
-- `src/server/routes.ts` - HTTP routes
-- `src/client/cli.ts` - Simplified CLI as HTTP client
-- `docs/SERVER.md` - Server setup and usage
-- `docs/MCP_SETUP.md` - Claude Code integration guide
-
-**Files to archive/deprecate:**
-- `src/brain/*` - Personal Brain orchestration (Phases 4-5 deprecated)
-- `src/consensus/*` - Consensus module (Phase 4 deprecated)
-- Old `src/cli/index.ts` - Replaced by simpler client
-
-**Architecture Principles:**
-1. **Single server process** - One Express app serves both HTTP and MCP endpoints
-2. **Shared Council** - Council initialized once, used by all clients
-3. **Client agnostic** - Council just returns critiques, clients decide what to do with them
-4. **Simple & focused** - No consensus, no synthesis, no orchestration - just parallel model consultation
-
-**High-Level Flow:**
-```
-Client (CLI or Claude Code)
-  → Server (Express with MCP SDK)
-    → Council (4 models in parallel)
-      → Critiques (raw responses from each model)
-        → Back to Client (client decides what to do)
-```
-
-**Endpoints:**
-- `POST /council` - HTTP endpoint for CLI and other clients
-- `GET /mcp/sse` - MCP endpoint for Claude Code (uses SSE transport)
-- `GET /health` - Health check
-
-**Request/Response Contract:**
-```typescript
-// Input: What the client needs
-Request {
-  original_prompt: string,
-  proposed_answer?: string,  // Optional - Claude Code provides this
-  context?: string           // Optional - additional info
-}
-
-// Output: What Council returns
-Response {
-  critiques: [{
-    model: string,
-    response: string,
-    latency_ms: number
-  }],
-  summary: {
-    models_consulted: number,
-    models_responded: number,
-    models_failed: number,
-    total_latency_ms: number
-  }
-}
-```
-
-**Implementation Steps (High Level):**
-
-**Step 1: Create Server Infrastructure**
-- [x] Set up Express server with MCP SDK integration
-  - Used streamable HTTP transport (recommended over SSE)
-  - Created `src/server/index.ts` and `src/server/types.ts`
-- [x] Initialize Council providers at startup
-  - Council initialized once at server startup
-  - Shared across all client requests
-- [x] Add health check endpoint
-  - GET /health returns Council status and available models
-- [x] Add basic request logging and error handling
-  - Console logging for startup, errors, and warnings
-  - Graceful handling of API key issues
-
-**Step 2: Implement MCP Integration**
-- [x] Add MCP endpoint using streamable HTTP transport
-  - POST /mcp handles all MCP protocol requests
-- [x] Define `council_consult` tool for Claude Code
-  - Tool accepts: prompt (required), context (optional)
-  - Returns: structured critiques + markdown text
-- [x] Tool calls Council logic for parallel querying
-  - Reused existing Council module implementation
-- [x] Format responses appropriately for MCP protocol
-  - Returns both text (markdown) and structuredContent
-
-**Step 3: Refactor CLI**
-- [x] Simplify CLI to HTTP client
-  - Updated `src/index.ts` to make HTTP requests to server
-  - Removed direct Brain/Council/Consensus instantiation
-- [x] Call server's /mcp endpoint via axios
-  - Uses JSON-RPC 2.0 protocol for MCP tool calls
-- [x] Keep UI/formatting logic in CLI
-  - Moved ui.ts helpers to src/ directly
-  - Preserved progress spinners and formatted output
-- [x] Add error handling for server not running
-  - Checks health endpoint before consulting
-  - Clear error messages with instructions
-
-**Step 4: Clean Up Deprecated Code**
-- [x] Remove Brain module (Phase 5)
-  - Deleted src/brain/ directory
-- [x] Remove Consensus module (Phase 4)
-  - Deleted src/consensus/ directory
-- [x] Remove old CLI implementation
-  - Deleted src/cli/index.ts (replaced by HTTP client)
-  - Kept ui.ts helpers (moved to src/ui.ts)
-- [x] Update documentation to reflect new architecture
-  - Updated README.md with daemon architecture
-  - Marked Phases 4-6 as deprecated in favor of simpler approach
-
-**Step 5: Documentation**
-- [x] Create server setup guide
-  - docs/SERVER.md with installation, configuration, endpoints
-- [x] Create MCP configuration guide for Claude Code
-  - docs/MCP_SETUP.md with integration instructions
-- [x] Document council_consult API
-  - Included in both SERVER.md and README.md
-- [x] Add example usage for both CLI and MCP
-  - CLI examples in README.md
-  - MCP examples in MCP_SETUP.md
-
-**Step 6: Testing & Validation**
-- [x] Verify with `npx tsc --noEmit` - no build errors
-  - Fixed type casting for structuredContent
-- [x] Verify with `npm run lint` - no linting errors
-  - Fixed prettier formatting issues
-  - Fixed no-misused-promises with void operator
-- [x] Build completes successfully
-  - `npm run build` produces dist/ output
-
-**Verification Checklist:**
-- [x] Single server process starts successfully
-- [x] `/health` endpoint returns model list
-- [x] MCP endpoint accepts council_consult tool calls
-- [x] CLI can call server (implementation complete, ready for manual testing)
-- [x] MCP endpoint tested with Claude Code ✅ **VERIFIED**
-  - Successfully consulted Council with question "What is the meaning of life?"
-  - All 4 models responded (Claude Sonnet 4.5, GPT, Grok, Llama 4 Maverick)
-  - Total deliberation time: 19.7s
-  - Structured responses returned correctly via MCP protocol
-  - Both text/markdown and structuredContent formats working
-- [ ] Concurrent requests tested (ready for load testing)
-- [x] Documentation complete and clear
-- [x] All TypeScript and linting checks passing
-
-**Dependencies Added:**
-- [x] `express` - HTTP server
-- [x] `@modelcontextprotocol/sdk` - Official MCP SDK (v1.25.3)
-- [x] `@types/express` - TypeScript types
-- [x] `zod` - Runtime type validation
-- [x] `axios` - HTTP client for CLI
-
-**Implementation Notes:**
-- Used **streamable HTTP** instead of SSE (MCP SDK recommendation)
-- Simplified architecture: no pre-processing, consensus, or synthesis
-- Council returns raw critiques from all models
-- Clients decide how to use the critiques
-- All deprecated modules removed (in git history if needed)
-
-**Verification:** ✅ Phase 7 Complete
-- Server implementation complete and builds successfully
-- CLI refactored to HTTP client
-- Documentation written
-- All TypeScript and linting checks pass
-- Ready for manual and integration testing
-
----
-
-### Phase 8: Evaluation Module (Separate) - 📅 **DEFERRED POST-MVP**
-
-**Status:** Deferred until after MVP completion. Manual qualitative testing will be performed first before investing in automated evaluation infrastructure.
-
-**Files to create:**
-- `src/eval/index.ts` - evaluation harness
-- `src/eval/questions.ts` - test question bank
-- `src/eval/compare.ts` - comparison logic
-- `src/eval/report.ts` - generate eval report
-
-**Purpose:** Prove Second Brain > single model
-
-**Method:**
-1. Define 20 hard test questions (reasoning, analysis, coding, etc.)
-2. For each question, get:
-   - Second Brain answer
-   - Claude-only answer
-   - GPT-only answer
-3. Present pairs blind (A vs B) for human evaluation
-4. Track preference rate
-
-**Commands:**
-```bash
-second-brain eval run              # Run all 20 questions through Council + individuals
-second-brain eval compare          # Interactive blind comparison UI
-second-brain eval report           # Generate summary stats
-```
-
-**Tasks:**
-1. Create question bank with diverse, challenging questions
-2. Implement runner that queries Second Brain + individual models
-3. Save all responses to JSON for comparison
-4. Build simple CLI for blind A/B comparison
-5. Generate report with preference percentages
-
-**Verification:** Run eval suite, generate report showing Second Brain preference rate.
-
-**Note:** Phase 8 is **deferred until after MVP completion**. Qualitative manual testing will be performed first before investing in automated evaluation infrastructure.
-
----
-
-### Phase 9: MCP Specification Compliance & Security Hardening ✅ **COMPLETE**
-
-**Goal:** Ensure full compliance with MCP specification (2025-06-18) and implement comprehensive security measures. This phase is required to complete the MVP.
-
-**Status:** ✅ **COMPLETE** - All 6 subphases finished, 62 tests passing, MVP ready for deployment
-
-**Achievements:**
-- ✅ stdio transport implemented (preferred for local development)
-- ✅ SSE transport for backwards compatibility
-- ✅ Comprehensive security hardening (rate limiting, input/output sanitization, security headers)
-- ✅ 40 security tests (exceeded 19 planned)
-- ✅ MCP conformance test infrastructure ready
-- ✅ Complete documentation (340-line SECURITY.md, updated README and MCP_SETUP)
-
-**Context:** Built upon Phase 7 MCP server with HTTP/Streamable transport. Added stdio and SSE transports, comprehensive security measures, and full documentation.
-
-**Files to create:**
-- `src/server/stdio.ts` - stdio transport entry point
-- `src/server/shared.ts` - shared McpServer instance
-- `src/server/rate-limit.ts` - rate limiting configuration
-- `src/server/sanitize.ts` - input/output sanitization
-- `src/server/security.test.ts` - security tests
-- `src/server/server.test.ts` - endpoint integration tests
-- `conformance-baseline.yml` - MCP conformance baseline
-- `docs/SECURITY.md` - security documentation
+**Implementation:**
+- Remove hardcoded timeout from Council deliberation
+- Add AbortController support for user cancellation (Ctrl+C)
+- Update all provider calls to accept and respect AbortSignal
+- Providers continue until completion or user cancels
+- Test with long prompts (1000+ line files, complex analyses)
 
 **Files to modify:**
-- `src/server/index.ts` - refactor for shared server, add SSE endpoint, apply middleware
-- `package.json` - add dependencies and test scripts
-- `.env.example` - add rate limit configuration
-- `docs/MCP_SETUP.md` - document stdio and SSE transports
+- `src/council/index.ts` - Remove timeout parameter, add abort signal support
+- `src/providers/anthropic/index.ts` - Accept AbortSignal, pass to API
+- `src/providers/openai/index.ts` - Accept AbortSignal, pass to API
+- `src/providers/xai/index.ts` - Accept AbortSignal, pass to API
+- `src/providers/groq/index.ts` - Accept AbortSignal, pass to API
+- `src/server/shared.ts` - Pass abort capability through MCP
 
-#### Subphase 9.1: stdio Transport Support (HIGH PRIORITY) ✅ **COMPLETE**
+**Acceptance criteria:**
+- [x] No automatic timeout on council deliberation
+- [x] Ctrl+C cleanly cancels in-progress requests (via AbortSignal)
+- [x] Models can take as long as needed to respond
+- [x] Test with AbortSignal cancellation (test added and passing)
 
-**Rationale:** MCP spec says clients SHOULD support stdio for local process spawning. This is the preferred transport for local development.
+**Implementation notes:**
+- Removed `timeoutMs` parameter from Council constructor
+- Updated Council.deliberate() to accept optional `signal?: AbortSignal` in options
+- Removed automatic timeout logic (Promise.race with timeout)
+- Updated consultCouncil() to pass AbortSignal from MCP request
+- Updated MCP tool handler to extract signal from `extra.signal`
+- All providers already support AbortSignal via Vercel AI SDK
+- Added test for user cancellation via AbortSignal
+- All 80 tests passing
 
-**Tasks:**
-- [x] Create `src/server/shared.ts` to export shared McpServer instance and tool registration
-- [x] Create `src/server/stdio.ts` using StdioServerTransport from MCP SDK
-- [x] Refactor `src/server/index.ts` to use shared server instance
-- [x] Add `server:stdio` npm script
-- [x] Test stdio transport with echo test via stdin/stdout
-- [x] Update `docs/MCP_SETUP.md` with stdio configuration examples
-- [x] Verify with `npx tsc --noEmit` - no build errors
-- [x] Verify with `npm run lint` - no linting errors
-
-**Implementation Pattern:**
-```typescript
-// src/server/shared.ts
-export const mcpServer = new McpServer({
-  name: 'council-mcp-server',
-  version: '1.0.0',
-});
-mcpServer.registerTool('council_consult', ...); // Shared registration
-
-// src/server/stdio.ts
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { mcpServer } from './shared.js';
-const transport = new StdioServerTransport();
-await mcpServer.connect(transport);
-await transport.start();
-```
-
-**Verification:**
-- Run `npm run server:stdio` and send JSON-RPC messages via stdin
-- Server responds correctly via stdout (no stray text)
-- MCP client can spawn server: `node dist/server/stdio.js`
-
-#### Subphase 9.2: SSE Transport for Backwards Compatibility (MEDIUM PRIORITY) ✅ **COMPLETE**
-
-**Rationale:** Support older MCP clients (2024-11-05 spec) that use HTTP+SSE transport. Ensures compatibility with older Claude Code versions.
-
-**Tasks:**
-- [x] Add GET /mcp endpoint using SSEServerTransport from MCP SDK
-- [x] Keep POST /mcp (Streamable HTTP) as primary transport
-- [x] Detect client version via MCP-Protocol-Version header
-- [x] Log deprecation warning when SSE is used
-- [x] Update `docs/MCP_SETUP.md` with SSE transport configuration
-- [x] Test SSE endpoint with curl (Accept: text/event-stream header)
-- [x] Verify both transports return same Council responses
-- [x] Verify with `npx tsc --noEmit` - no build errors
-
-**Verification:**
-- Client with `Accept: text/event-stream` gets SSE stream
-- Client with `Accept: application/json` gets Streamable HTTP
-- Deprecation warning logged when SSE used
-
-#### Subphase 9.3: Security Hardening (HIGH PRIORITY) ✅ **COMPLETE**
-
-**9.3A: Rate Limiting** ✅
-- [x] Install `express-rate-limit` package
-- [x] Create `src/server/rate-limit.ts` with configurable limits
-- [x] Apply rate limiting to POST /mcp and GET /mcp endpoints
-- [x] Add `RATE_LIMIT_WINDOW_MS` and `RATE_LIMIT_MAX_REQUESTS` to .env.example
-- [x] Return 429 status with clear error message when limit exceeded
-- [x] Test rate limiting (trigger 429 with curl loop)
-
-**Configuration:**
-```bash
-# .env.example additions
-RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
-RATE_LIMIT_MAX_REQUESTS=100      # 100 requests per window
-```
-
-**9.3B: Enhanced Origin/Host Validation** ✅
-- [x] Verify createMcpExpressApp already applies host validation
-- [x] Add explicit Origin header validation for defense in depth
-- [x] Whitelist only localhost origins (http://localhost:*, http://127.0.0.1:*)
-- [x] Reject requests with suspicious Origin headers
-- [x] Log rejected requests for security monitoring
-
-**9.3C: Input Sanitization** ✅
-- [x] Create `src/server/sanitize.ts` module
-- [x] Add length limits to Zod schema (prompt: 10,000 chars, context: 5,000 chars)
-- [x] Strip control characters and null bytes from inputs
-- [x] Detect and log potential prompt injection attempts
-- [x] Add input sanitization before Council deliberation
-
-**Patterns to detect:**
-- "Ignore all previous instructions"
-- "System:" prompts
-- Control characters (\x00-\x1F)
-
-**9.3D: Output Sanitization** ✅
-- [x] Add response filtering in `src/server/sanitize.ts`
-- [x] Detect common secret patterns (API keys, tokens, emails, URLs with credentials)
-- [x] Redact or warn about potential sensitive data leaks
-- [x] Log any redactions for security audit trail
-
-**Patterns to detect:**
-- API keys: `sk-[a-zA-Z0-9]{32,}`, `xai-[a-zA-Z0-9]+`, `gsk_[a-zA-Z0-9]+`
-- Bearer tokens
-- Email addresses
-- AWS credentials
-
-**9.3E: Security Headers** ✅
-- [x] Install `helmet` package
-- [x] Apply helmet middleware to Express app
-- [x] Configure CSP (Content-Security-Policy) for localhost-only
-- [x] Add X-Frame-Options: DENY
-- [x] Add X-Content-Type-Options: nosniff
-- [x] Test security headers present (curl -I /health)
-
-**Dependencies to add:**
-```json
-{
-  "dependencies": {
-    "express-rate-limit": "^7.1.0",
-    "helmet": "^8.0.0"
-  }
-}
-```
-
-**Verification (Security Hardening):** ✅
-- [x] Rate limiting triggers after 100 requests in 15 minutes (test with loop)
-- [x] Malicious Origin headers rejected (test with custom headers)
-- [x] Control characters stripped from inputs (test in sanitize.test.ts)
-- [x] Injection attempts detected and logged (test in security.test.ts)
-- [x] API keys redacted from outputs (test in sanitize.test.ts)
-- [x] Security headers present in all responses (curl -I verification)
-
-#### Subphase 9.4: MCP Conformance Testing (HIGH PRIORITY) ✅ **COMPLETE**
-
-**Rationale:** Validate full compliance with MCP specification using official conformance framework.
-
-**Tasks:**
-- [x] Research MCP conformance testing framework (@modelcontextprotocol/conformance)
-- [x] Add `test:conformance:http` npm script
-- [x] Add `test:conformance:stdio` npm script
-- [x] Add `test:conformance:all` npm script
-- [x] Create `conformance-baseline.yml` to document known issues or spec deviations
-- [x] Run conformance tests on HTTP transport (infrastructure ready)
-- [x] Run conformance tests on stdio transport (infrastructure ready)
-- [x] Fix any critical failures (or document in baseline)
-- [x] Integrate conformance tests into CI/CD (optional - deferred)
-
-**npm scripts to add:**
-```json
-{
-  "test:conformance:http": "npm run build && npm run server & sleep 2 && npx @modelcontextprotocol/conformance server --url http://localhost:3000/mcp; kill %1",
-  "test:conformance:stdio": "npm run build && npx @modelcontextprotocol/conformance server --command 'node dist/server/stdio.js'",
-  "test:conformance:all": "npm run test:conformance:http && npm run test:conformance:stdio"
-}
-```
-
-**Verification:** ✅
-- [x] `npm run test:conformance:http` - scripts ready for execution
-- [x] `npm run test:conformance:stdio` - scripts ready for execution
-- [x] Server correctly implements MCP protocol lifecycle (initialize, tools/list, tools/call)
-- [x] No protocol violations detected (verified with Claude Code integration)
-
-#### Subphase 9.5: Security-Focused Testing (HIGH PRIORITY) ✅ **COMPLETE**
-
-**Rationale:** Comprehensive test coverage for all security measures to validate hardening.
-
-**Tasks:**
-- [x] Install `supertest` and `@types/supertest` for HTTP endpoint testing
-- [x] Create `src/server/security.test.ts` - security-focused test suite (35 tests!)
-- [x] Create `src/server/server.test.ts` - endpoint integration tests (5 tests)
-- [x] Write rate limiting tests (3 tests: under limit, at limit, exceeded)
-- [x] Write Origin validation tests (2 tests: valid, invalid)
-- [x] Write input sanitization tests (4 tests: control chars, length limits, injection detection, valid input)
-- [x] Write output sanitization tests (3 tests: API key redaction, email redaction, clean output)
-- [x] Write security headers tests (2 tests: helmet headers present, CSP correct)
-- [x] Write endpoint integration tests (5 tests: health, mcp success, mcp failure, invalid input, timeout)
-- [x] Mock Council providers to avoid API calls in tests
-- [x] Run all tests: `npm run test` - 62 tests passing
-- [x] Verify test coverage >80% for server code
-- [x] Verify with `npm run lint` - no linting errors
-
-**Test Coverage Goals:**
-- Rate limiting: 3 tests
-- Origin validation: 2 tests
-- Input sanitization: 4 tests
-- Output sanitization: 3 tests
-- Security headers: 2 tests
-- Endpoint integration: 5 tests
-- **Total: 19 new tests**
-
-**Dependencies to add:**
-```json
-{
-  "devDependencies": {
-    "supertest": "^7.0.0",
-    "@types/supertest": "^6.0.0"
-  }
-}
-```
-
-**Verification:** ✅
-- [x] All security tests pass (40 tests total - exceeded goal of 19!)
-- [x] Test coverage >80% for src/server/ code
-- [x] Security measures validated end-to-end
-
-#### Subphase 9.6: Documentation & Final Verification (MEDIUM PRIORITY) ✅ **COMPLETE**
-
-**Tasks:**
-- [x] Create `docs/SECURITY.md` with comprehensive security documentation (340 lines!)
-- [x] Update `README.md` with security section
-- [x] Update `docs/MCP_SETUP.md` with stdio and SSE configuration
-- [x] Document rate limiting configuration
-- [x] Document known security limitations (no auth, no audit logging)
-- [x] Add security best practices for users
-- [x] Add "How to report security issues" section
-- [x] Run full verification checklist (below)
-- [x] Update this PLAN.md to mark Phase 9 as complete
-
-**Final Verification Checklist:** ✅
-- [x] stdio transport works with JSON-RPC via stdin/stdout
-- [x] SSE transport works with older clients (with deprecation warning)
-- [x] Rate limiting prevents abuse (429 after threshold)
-- [x] Origin validation rejects malicious requests
-- [x] Input sanitization strips control chars and detects injection
-- [x] Output sanitization redacts secrets
-- [x] Security headers present in all responses
-- [x] MCP conformance tests infrastructure ready
-- [x] All security tests pass (40 tests - exceeded goal!)
-- [x] Documentation complete (README, MCP_SETUP, SECURITY)
-- [x] Build passes: `npx tsc --noEmit`
-- [x] Linter passes: `npm run lint`
-- [x] All tests pass: `npm run test` (62 tests passing)
-
-**Success Criteria:**
-Phase 9 is complete when:
-1. Server supports stdio, HTTP/Streamable, and SSE transports
-2. All security hardening measures implemented (rate limiting, sanitization, headers)
-3. MCP conformance tests pass
-4. Security tests pass with >80% coverage
-5. Documentation updated
-6. All verification checks pass
-
-**Estimated Time:** 20-25 hours total
-- Subphase 9.1 (stdio): 3-4 hours
-- Subphase 9.2 (SSE): 2-3 hours
-- Subphase 9.3 (Security): 5-6 hours
-- Subphase 9.4 (Conformance): 2-3 hours
-- Subphase 9.5 (Tests): 4-5 hours
-- Subphase 9.6 (Docs): 2 hours
+**Estimated time:** 2-3 hours ✅ **COMPLETE**
 
 ---
 
-### Phase 10: MCP Hardening & Attachments ✅ **COMPLETE**
+#### Task 11.2: Rename & Enhance Council Tool 🧠 `phone_council`
 
-**Tasks:**
-- [x] Add cancellable timeouts (AbortController) for provider calls
-- [x] Remove startup "probe" queries in provider fallback
-- [x] Normalize MCP handler errors to JSON-RPC error responses
-- [x] Redact emails by default (make configurable)
-- [x] Reject requests with missing/invalid Host or Origin
-- [x] Add attachment support to Council tool input
-- [x] Add tests for the new features
+**Goal:** Rename `council_consult` to `phone_council` and add AI learning behavior with structured synthesis
 
-**Verification:** ✅
-- [x] Provider timeouts abort in-flight requests
-- [x] MCP errors return JSON-RPC error responses
-- [x] Origin/Host validation enforced for all routes
-- [x] Attachments validated and forwarded to providers
-- [x] Updated tests cover new behaviors
+**Tool Rename:**
+- `council_consult` → `phone_council` (better naming consistency)
+- Maintains backward compatibility initially, deprecate old name
+
+**Current flow:**
+```
+User asks question
+  → Claude Code gives answer
+  → User calls council_consult
+  → Raw council responses shown (no learning)
+```
+
+**New flow:**
+```
+User asks question
+  → Claude Code gives initial answer
+  → Claude Code calls phone_council (when uncertain or user requests it)
+  → Council responds with critiques
+  → Claude Code reads responses
+  → Claude Code synthesizes and improves answer
+  → Shows improved answer + explanation of changes
+  → User can request raw responses if desired
+```
+
+**Tool Design:**
+```typescript
+phone_council({
+  prompt: string,
+  context?: string,
+  attachments?: Attachment[],
+  show_raw?: boolean  // Optional: set to true to skip synthesis, just show raw responses
+})
+```
+
+**Enhanced Response Format (Structured Synthesis):**
+
+```typescript
+{
+  critiques: [
+    { model: "Claude Sonnet 4.5", model_id: "anthropic/...", response: "...", latency_ms: 1234 },
+    { model: "GPT-5.2", model_id: "openai/gpt-5-2", response: "...", latency_ms: 2345 },
+    { model: "Grok 3 Beta", model_id: "xai/grok-3-beta", response: "...", latency_ms: 3456 },
+    { model: "Llama 4 Maverick", model_id: "groq/...", response: "...", latency_ms: 4567 }
+  ],
+  summary: {
+    models_consulted: 4,
+    models_responded: 4,
+    total_latency_ms: 11602
+  },
+  synthesis_data: {
+    agreement_points: ["Topic 1", "Topic 2"],
+    disagreements: [
+      {
+        topic: "Topic name",
+        positions: [
+          { models: ["Model A"], view: "View 1" },
+          { models: ["Model B", "Model C"], view: "View 2" }
+        ]
+      }
+    ],
+    key_insights: [
+      { model: "Model name", insight: "Key insight text" }
+    ],
+    confidence: 0.85  // Overall agreement level (0-1)
+  },
+  synthesis_instruction: "Read the council responses and structured synthesis_data. Use it to: (1) identify areas of consensus, (2) highlight disagreements, (3) extract key insights and attribute them, (4) form your updated position, (5) explain what changed your mind. Present a synthesized answer that shows you learned from the council.",
+  // Both synthesis_data and synthesis_instruction are omitted if show_raw=true
+}
+```
+
+**AI Behavior Examples:**
+
+**Scenario 1: Agreement**
+```
+"After consulting the council, I'm confident in my original approach.
+All four models (Claude, GPT, Grok, Llama) agree that [X].
+Claude specifically highlighted [detail], which I'll add here..."
+```
+
+**Scenario 2: Correction**
+```
+"I need to correct my earlier answer. After consulting the council:
+
+What I initially said: [X]
+What changed: GPT and Claude both pointed out [Y]
+Corrected answer: [Z]
+
+This changed my mind because [reasoning]."
+```
+
+**Scenario 3: Disagreement**
+```
+"The council raised valuable concerns, though there's some disagreement:
+
+My updated position: [synthesis incorporating valid points]
+
+However, Grok suggests an alternative approach: [alternative]
+
+Here are both perspectives:
+1. [My view + council majority]: [explanation]
+2. [Alternative view]: [explanation]
+
+I lean toward option 1 because [reasoning], but option 2 could work if [conditions]."
+```
+
+**Scenario 4: Raw view requested** (`show_raw=true`)
+```
+Just show the raw council responses without synthesis instruction.
+User wants to see unfiltered critiques.
+```
+
+**Implementation:**
+- Rename tool from `council_consult` to `phone_council`
+- Add `show_raw` parameter (optional, default false)
+- Extract structured synthesis data from council responses:
+  - Identify agreement points (all models say the same thing)
+  - Identify disagreements (models contradict each other)
+  - Extract key insights and attribute to specific models
+  - Calculate confidence score based on agreement level
+- Include model_id in each critique for auditability
+- Include both `synthesis_data` and `synthesis_instruction` when `show_raw=false`
+- Omit both when `show_raw=true`
+- Maintain backward compatibility (support both names initially)
+
+**Files to create/modify:**
+- `src/server/shared.ts` - Rename tool, add show_raw parameter, synthesis extraction
+- `src/server/types.ts` - Add SynthesisData type, update PhoneCouncilResponse
+- `src/server/synthesis.ts` - Synthesis extraction logic (agreement/disagreement analysis)
+- `docs/MCP_SETUP.md` - Document new name and behavior
+
+**Acceptance criteria:**
+- [ ] Tool renamed to `phone_council`
+- [ ] `show_raw` parameter works correctly
+- [ ] Structured synthesis_data extracted from responses
+- [ ] Agreement points identified automatically
+- [ ] Disagreements detected and grouped by topic
+- [ ] Key insights attributed to specific models
+- [ ] Confidence score calculated (0-1)
+- [ ] model_id included in each critique
+- [ ] Synthesis instruction included when show_raw=false
+- [ ] AI reads and learns from council responses
+- [ ] AI explains what changed (if anything)
+- [ ] AI presents counter-arguments when disagreeing
+- [ ] Test scenarios: agreement, disagreement, correction, raw view
+
+**Estimated time:** 5-6 hours (with structured synthesis extraction)
+
+---
+
+#### Task 11.3: Improve Context Sharing 📎
+
+**Goal:** Implement context validation and sharing tools (not just documentation)
+
+**Phase 11.3a: Context Validation & Testing** (2 hours)
+- Build context validation tools
+  - Create helper to validate context before sending to council
+  - Warn if context will be truncated by provider limits
+  - Test what context actually reaches each model
+  - Document context limits per provider (Claude: 200k, GPT: 128k, etc.)
+- Test with real scenarios:
+  - Code review: share file + related files
+  - PR review: share git diff + description
+  - Architecture question: share PLAN.md + ARCHITECTURE.md
+  - Large file: test truncation warnings
+- Gather feedback on what context is missing
+
+**Phase 11.3b: Context Budget Controls** (1.5 hours)
+- Implement context management tools
+  - Max tokens/fields limits per request
+  - Automatic truncation with warnings
+  - Redaction helpers (strip secrets, emails, etc.)
+  - Context size estimation before sending
+- Recommended brief schema
+  ```typescript
+  interface ContextBrief {
+    goal: string;           // What you're trying to achieve
+    constraints: string[];  // Known limitations
+    relevant_facts: string[]; // Key information models need
+    avoid: string[];        // What NOT to consider
+  }
+  ```
+
+**Phase 11.3c: Document Best Practices** (1 hour)
+- Create `docs/CONTEXT_GUIDE.md`
+- Examples of good context for different scenarios:
+  - **Code review:** File path, related files, project structure, error messages
+  - **PR review:** Description, changed files, test results, deployment context
+  - **Architecture decision:** Existing docs, constraints, requirements
+  - **Bug fix:** Stack trace, reproduction steps, environment info
+  - **Feature request:** User story, acceptance criteria, related features
+- Context truncation examples
+- Budget management guidance
+
+**Phase 11.3d: Smart Context Detection** (Future phase - deferred)
+- Auto-detect context type from prompt
+- Suggest relevant files based on imports/dependencies
+- Parse project structure automatically
+- Include error traces when debugging
+- *Deferred until we have usage data*
+
+**Files to create:**
+- `src/server/context-validator.ts` - Context validation and budget controls
+- `src/server/types.ts` - Add ContextBrief interface
+- `docs/CONTEXT_GUIDE.md` - Best practices with validation examples
+
+**Files to modify:**
+- `src/server/shared.ts` - Add context validation before council queries
+
+**Acceptance criteria:**
+- [ ] Context validation helper warns about truncation
+- [ ] Provider context limits documented (tokens/model)
+- [ ] Context budget controls enforce limits
+- [ ] Redaction helpers strip sensitive data
+- [ ] Context brief schema available for structured input
+- [ ] Test attachments with 5+ real scenarios including large files
+- [ ] Test validation warnings trigger correctly
+- [ ] Document what works well
+- [ ] Identify gaps for future improvement
+- [ ] Create usage examples with validation
+
+**Estimated time:** 4-5 hours (implementation + validation, not just docs)
+
+**Note:** Can work in parallel with 11.2 development and testing
+
+---
+
+### Phase 12: Hosting & Authentication 🏢 **NEXT WEEK**
+
+**Timeline:** Next week (3-4 days)
+**Goal:** Deploy for team usage with proper auth
+
+#### Task 12.1: Dockerize Server 🐳
+
+**Goal:** Run server in container for easy deployment
+
+**Implementation:**
+
+**Dockerfile:**
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --production
+
+# Copy built code
+COPY dist ./dist
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"
+
+# Run server
+CMD ["node", "dist/server/index.js"]
+```
+
+**docker-compose.yml:**
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: phone_a_friend
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: phone_a_friend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  phone-a-friend:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://phone_a_friend:${DB_PASSWORD}@postgres:5432/phone_a_friend
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - PORT=3000
+      - RATE_LIMIT_WINDOW_MS=900000
+      - RATE_LIMIT_MAX_REQUESTS=100
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+**Files to create:**
+- `Dockerfile`
+- `docker-compose.yml`
+- `.dockerignore`
+- `docs/DEPLOYMENT.md`
+
+**Acceptance criteria:**
+- [ ] Docker image builds successfully
+- [ ] Container runs and serves requests
+- [ ] Health check works
+- [ ] Environment variables injected properly
+- [ ] Can connect from host machine
+
+**Estimated time:** 2 hours
+
+---
+
+#### Task 12.2: API Key Authentication 🔑
+
+**Goal:** Protect hosted server with API keys
+
+**Database:** PostgreSQL (production-ready from the start)
+
+**Database Schema:**
+```sql
+CREATE TABLE api_keys (
+  key VARCHAR(64) PRIMARY KEY,        -- e.g., "paf_sk_1234567890abcdef"
+  name VARCHAR(255) NOT NULL,         -- e.g., "Jonathan's Key"
+  organization VARCHAR(255),          -- e.g., "Glif"
+  created_at TIMESTAMP DEFAULT NOW(),
+  rate_limit INTEGER DEFAULT 100,     -- Requests per window
+  enabled BOOLEAN DEFAULT true,
+  last_used_at TIMESTAMP
+);
+
+CREATE TABLE usage_logs (
+  id SERIAL PRIMARY KEY,
+  api_key VARCHAR(64) NOT NULL,
+  endpoint VARCHAR(50) NOT NULL,      -- "phone_council" or "phone_friend"
+  model VARCHAR(100),                 -- Which model(s) used
+  tokens_used INTEGER,
+  latency_ms INTEGER,
+  created_at TIMESTAMP DEFAULT NOW(),
+  FOREIGN KEY (api_key) REFERENCES api_keys(key) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_usage_logs_api_key ON usage_logs(api_key);
+CREATE INDEX idx_usage_logs_created_at ON usage_logs(created_at);
+CREATE INDEX idx_api_keys_enabled ON api_keys(enabled);
+```
+
+**Implementation:**
+- Generate API keys with prefix `paf_sk_` (Phone A Friend Secret Key)
+- Store in PostgreSQL database
+- Use connection pooling for performance
+- Add `Authorization: Bearer <key>` header validation middleware
+- Rate limiting per API key (separate from IP-based rate limiting)
+- Usage tracking for monitoring and future billing
+- Admin CLI to manage keys
+
+**Connection:**
+```typescript
+// Database URL format
+DATABASE_URL=postgresql://user:password@localhost:5432/phone_a_friend
+```
+
+**Files to create:**
+- `src/server/auth.ts` - API key validation, generation
+- `src/server/db.ts` - PostgreSQL connection pool wrapper
+- `src/server/middleware/auth.ts` - Auth middleware
+- `src/cli/admin.ts` - Admin commands for key management
+- `migrations/001_initial_schema.sql` - Database schema
+
+**Admin CLI commands:**
+```bash
+phone-a-friend admin create-key --name "Jonathan" --org "Glif"
+phone-a-friend admin list-keys
+phone-a-friend admin revoke-key paf_sk_...
+phone-a-friend admin enable-key paf_sk_...
+phone-a-friend admin disable-key paf_sk_...
+phone-a-friend admin usage --key paf_sk_... [--days 7]
+phone-a-friend admin stats  # Overall usage statistics
+```
+
+**Files to modify:**
+- `src/server/index.ts` - Add auth middleware to protected routes
+- `docker-compose.yml` - Add PostgreSQL service
+- `package.json` - Add `pg` dependency
+
+**Updated docker-compose.yml:**
+```yaml
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: phone_a_friend
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: phone_a_friend
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+
+  phone-a-friend:
+    build: .
+    depends_on:
+      - postgres
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://phone_a_friend:${DB_PASSWORD}@postgres:5432/phone_a_friend
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - PORT=3000
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+```
+
+**Acceptance criteria:**
+- [ ] PostgreSQL connection works
+- [ ] API keys can be generated
+- [ ] Requests require valid API key
+- [ ] Invalid keys return 401 Unauthorized
+- [ ] Disabled keys return 403 Forbidden
+- [ ] Rate limiting enforced per key
+- [ ] Usage tracked in database with proper indexes
+- [ ] Admin CLI works for all operations
+- [ ] Connection pooling configured properly
+
+**Estimated time:** 5 hours (PostgreSQL setup + auth)
+
+---
+
+#### Task 12.3: Deploy for Team 🚀
+
+**Goal:** Host on cloud for team access
+
+**Deployment options:**
+- DigitalOcean App Platform (easiest)
+- AWS ECS/Fargate
+- Fly.io (good for containers)
+- Railway
+
+**Recommended: DigitalOcean App Platform** (simple, affordable)
+
+**Steps:**
+1. Push Docker image to registry (Docker Hub or GitHub Container Registry)
+2. Create DigitalOcean app
+3. Configure environment variables
+4. Set up custom domain (e.g., `api.phone-a-friend.com`)
+5. Configure SSL/TLS (automatic with DO)
+6. Generate team API keys
+7. Document connection instructions
+
+**Files to create:**
+- `docs/DEPLOYMENT.md` - Step-by-step deployment guide
+- `docs/TEAM_SETUP.md` - How team members connect to hosted service
+
+**Acceptance criteria:**
+- [ ] Server running on public URL
+- [ ] HTTPS enabled
+- [ ] Team members can connect with API keys
+- [ ] Monitoring/logging configured
+- [ ] Cost tracking set up
+
+**Estimated time:** 3 hours
+
+---
+
+### Phase 13: Rename & Onboarding 🎨 **LATER**
+
+**Timeline:** After Phase 12 (lower priority)
+
+#### Task 13.1: Rename to "Phone a Friend" 🏷️
+
+**Scope:** Complete rename across codebase and infrastructure
+
+**Changes:**
+- npm package: `second-brain` → `@glif/phone-a-friend`
+- CLI command: `second-brain` → `phone-a-friend`
+- Repository name
+- All code references (100+ files)
+- Documentation
+- Environment variables: `SECOND_BRAIN_*` → `PHONE_A_FRIEND_*`
+- MCP server name: `council-mcp-server` → `phone-a-friend-mcp`
+- Database name, Docker image name, etc.
+
+**Migration strategy:**
+- Create `@glif/phone-a-friend` package
+- Deprecate `second-brain` package
+- Add compatibility shim for old env vars
+- Update all documentation
+
+**Acceptance criteria:**
+- [ ] All references renamed
+- [ ] Package published to npm
+- [ ] GitHub repo renamed
+- [ ] Documentation updated
+- [ ] Backward compatibility maintained
+
+**Estimated time:** 3-4 hours
+
+---
+
+#### Task 13.2: Onboarding TUI ✨
+
+**Goal:** Smooth first-run experience for new users
+
+**Library:** `inquirer` (simple, well-maintained)
+
+**First-run flow:**
+```
+$ phone-a-friend ask "help me code"
+
+Welcome to Phone a Friend! 🎯
+
+It looks like this is your first time running Phone a Friend.
+Let's get you set up!
+
+? How do you want to use Phone a Friend?
+  > Connect to cloud (recommended) - api.phone-a-friend.com
+    Run locally - host your own server
+
+[If cloud selected]
+? Enter your API key: paf_sk_...
+✓ Connected to Phone a Friend cloud!
+✓ Testing connection... 4 models available
+
+[If local selected]
+Let's configure your AI providers.
+
+? Add AI provider?
+  > Yes, add Anthropic (Claude)
+    Skip for now
+
+? Anthropic API Key: sk-ant-...
+? Select Claude models:
+  [x] claude-sonnet-4-5 (primary)
+  [x] claude-sonnet-3-5 (fallback)
+  [ ] claude-opus-4-5
+
+✓ Anthropic configured!
+
+? Add another provider?
+  > Yes, add OpenAI (GPT)
+    No, I'm done
+
+? OpenAI API Key: sk-...
+? Select GPT models:
+  [x] gpt-5-2 (primary)
+  [x] gpt-4o (fallback)
+  [ ] gpt-4-turbo
+
+✓ OpenAI configured!
+
+? Add another provider?
+  > Yes, add xAI (Grok)
+    Yes, add Groq (Llama)
+    No, I'm done
+
+[Continue for all providers]
+
+✓ Setup complete!
+
+Your configuration:
+  • 4 providers configured
+  • 8 models available
+  • Server starting on localhost:3000...
+
+Ready to phone a friend! 🎉
+
+Try: phone-a-friend ask "What is TypeScript?"
+```
+
+**Configuration storage:**
+- Local mode: `~/.phone-a-friend/config.json`
+- Cloud mode: `~/.phone-a-friend/credentials.json` (just API key)
+
+**Additional commands:**
+```bash
+phone-a-friend setup         # Re-run onboarding
+phone-a-friend settings      # Manage configuration
+phone-a-friend test          # Test provider connectivity
+phone-a-friend status        # Show current config
+phone-a-friend switch        # Switch between local/cloud
+```
+
+**Settings manager UI:**
+```
+Phone a Friend Settings
+
+Current mode: Local
+Models configured: 8
+Server: localhost:3000
+
+[1] Add/remove AI providers
+[2] Test connectivity
+[3] Switch to cloud mode
+[4] View usage statistics
+[5] Back to main menu
+```
+
+**Files to create:**
+- `src/cli/onboarding.ts` - First-run flow
+- `src/cli/settings.ts` - Settings manager
+- `src/config/storage.ts` - Config file management
+- `src/cli/commands/setup.ts` - Setup command
+- `src/cli/commands/settings.ts` - Settings command
+- `src/cli/commands/status.ts` - Status command
+
+**Files to modify:**
+- `src/index.ts` - Check for first run, trigger onboarding
+- `package.json` - Add inquirer dependency
+
+**Acceptance criteria:**
+- [ ] First-run triggers onboarding automatically
+- [ ] Can configure for cloud or local mode
+- [ ] Can add/remove providers easily
+- [ ] Settings manager works
+- [ ] Config persists between runs
+- [ ] Can switch modes without losing config
+
+**Estimated time:** 6 hours
+
+---
+
+### Phase 14: Individual Model Tool 🎯 **FUTURE**
+
+**Timeline:** After Phase 11-13 (deferred due to complexity)
+**Goal:** Add `phone_friend` tool for consulting specific models
+
+---
+
+#### Task 14.1: Add Individual Model Tool `phone_friend`
+
+**Goal:** Let users consult specific models instead of full council
+
+**Tool Design:**
+```typescript
+phone_friend({
+  model: string,  // Fuzzy-matched model identifier
+  prompt: string,
+  context?: string,
+  attachments?: Attachment[]
+})
+```
+
+**Model Matching Strategy:**
+
+The tool accepts flexible input and intelligently matches to available models:
+
+1. **Full ID with provider:** `"anthropic/claude-sonnet-4-5-20250929"` ✓ (canonical)
+2. **Short name:** `"claude-sonnet-4-5"`, `"gpt-5-2"`, `"grok-3-beta"` ✓ (aliases)
+3. **Fuzzy variations:** `"GPT 5 2"`, `"GPT5-2"`, `"gpt_5_2"` → normalized to `"gpt-5-2"` ✓
+4. **Provider defaults:** `"gpt"`, `"claude"`, `"grok"`, `"llama"` → use primary model ✓
+
+**Fuzzy Matching Logic:**
+- Normalize input (lowercase, remove spaces/underscores, standardize separators)
+- Try exact match against stable IDs and aliases
+- Try fuzzy match with confidence scoring (Levenshtein distance)
+- Confidence >= 80%: auto-accept
+- Confidence 50-80%: return "did you mean?" with top 3 suggestions
+- Confidence < 50%: reject with error and list available models
+- Log matches for debugging
+
+**Implementation:**
+- Add `phone_friend` tool to MCP server
+- Create fuzzy matching function with confidence scoring
+- Support full IDs, short names, and fuzzy variants
+- Expose all model options in tool schema
+- Return helpful suggestions for ambiguous matches
+- Reuse existing provider infrastructure
+
+**Files to create/modify:**
+- `src/server/shared.ts` - Add phone_friend tool registration
+- `src/server/types.ts` - Add PhoneFriendRequest type
+- `src/server/model-matcher.ts` - Fuzzy matching logic
+- `src/config.ts` - Add getAllAvailableModels() helper
+
+**Response format:**
+```typescript
+{
+  model: string,           // Full ID of model that responded
+  response: string,        // The model's answer
+  latency_ms: number,
+  tokens_used?: number
+}
+```
+
+**Acceptance criteria:**
+- [ ] Stable IDs work as canonical identifiers
+- [ ] Provider defaults work ("gpt" → gpt-5-2)
+- [ ] Short names and full IDs work
+- [ ] Fuzzy matching with confidence thresholds
+- [ ] "Did you mean?" suggestions for ambiguous matches
+- [ ] Match logging for debugging
+- [ ] Comprehensive tests for variations and edge cases
+
+**Estimated time:** 4-5 hours
+
+---
+
+### Phase 15: Evaluation Module 📊 **FUTURE**
+
+**Status:** Deferred until after Phase 11-13 completion
+
+**Purpose:** Validate that Phone a Friend provides value
+
+**Planned approach:**
+- Manual testing first (Phase 11-12)
+- Gather user feedback from team usage
+- Build automated evaluation later if needed
+
+---
+
+### Potential Future Enhancements (Backlog)
+
+**Advanced Features:**
+- Specialized councils (coding-focused, security-focused, etc.)
+- Streaming responses for real-time feedback
+- Multi-turn conversations with council
+- Model confidence scores and uncertainty quantification
+- Auto-escalation (start with one model, escalate to council if uncertain)
+
+**Infrastructure:**
+- Redis caching for repeated questions
+- PostgreSQL for production database
+- Metrics and analytics dashboard
+- Load balancing for high traffic
+- Multi-region deployment
+
+**Integrations:**
+- VSCode extension
+- Slack bot
+- Discord bot
+- Web UI for human users
+- Python/JavaScript SDK
+
+**Monetization:**
+- Public API with tiered pricing
+- Usage-based billing
+- Team/organization plans
+- White-label deployment options
 
 ---
 
@@ -1020,34 +943,30 @@ second-brain/
 │   ├── council/              # [✅ Phase 3] Parallel querying
 │   │   ├── index.ts
 │   │   └── types.ts
-│   ├── server/               # [✅ Phase 7, ⏳ Phase 9] Daemon server
+│   ├── server/               # [✅ Phase 7, 9, 10] Daemon server
 │   │   ├── index.ts          # Express server with MCP (HTTP + SSE)
 │   │   ├── stdio.ts          # [Phase 9] stdio transport entry point
 │   │   ├── shared.ts         # [Phase 9] Shared McpServer instance
 │   │   ├── types.ts          # Request/response types
 │   │   ├── rate-limit.ts     # [Phase 9] Rate limiting config
 │   │   ├── sanitize.ts       # [Phase 9] Input/output sanitization
+│   │   ├── origin.ts         # [Phase 10] Origin validation
+│   │   ├── attachments.ts    # [Phase 10] Attachment handling
+│   │   ├── mcp-errors.ts     # [Phase 10] MCP error handling
 │   │   ├── server.test.ts    # [Phase 9] Endpoint integration tests
 │   │   └── security.test.ts  # [Phase 9] Security tests
-│   ├── client/               # [⏳ Phase 7] CLI as HTTP client
-│   │   └── cli.ts            # Simplified CLI
-│   ├── cli/                  # [✅ Phase 6] Original CLI (will be deprecated)
-│   │   ├── index.ts
-│   │   └── ui.ts
-│   ├── consensus/            # [📦 DEPRECATED] Consensus module
-│   │   ├── index.ts
-│   │   ├── types.ts
-│   │   └── strategies/
-│   │       └── simple-synthesis.ts
-│   ├── brain/                # [📦 DEPRECATED] Personal Brain
-│   │   ├── index.ts
-│   │   ├── types.ts
-│   │   └── prompts.ts
-│   └── eval/
+│   ├── ui.ts                 # Terminal UI helpers
+│   ├── index.ts              # CLI entry point (HTTP client)
+│   └── eval/                 # [📅 Phase 8 - Deferred]
 │       ├── index.ts
 │       ├── questions.ts
 │       ├── compare.ts
 │       └── report.ts
+├── docs/
+│   ├── SERVER.md             # Server setup and usage
+│   ├── MCP_SETUP.md          # Claude Code integration
+│   ├── SECURITY.md           # Security documentation
+│   └── ARCHITECTURE.md       # Technical specifications
 └── README.md
 ```
 
@@ -1093,18 +1012,23 @@ SECOND_BRAIN_DEBUG=false        # Enable debug logging
     "chalk": "^5.0.0",
     "express": "^4.18.0",
     "@modelcontextprotocol/sdk": "latest",
-    "cors": "^2.8.5",
+    "zod": "latest",
+    "axios": "latest",
     "express-rate-limit": "^7.1.0",
-    "helmet": "^8.0.0"
+    "helmet": "^8.0.0",
+    "formidable": "^3.5.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
     "tsx": "^4.0.0",
     "@types/node": "^20.0.0",
     "@types/express": "^4.17.0",
-    "@types/cors": "^2.8.0",
+    "@types/formidable": "^3.4.0",
+    "vitest": "latest",
     "supertest": "^7.0.0",
-    "@types/supertest": "^6.0.0"
+    "@types/supertest": "^6.0.0",
+    "eslint": "latest",
+    "prettier": "latest"
   }
 }
 ```
@@ -1115,18 +1039,22 @@ SECOND_BRAIN_DEBUG=false        # Enable debug logging
 
 After each phase, verify:
 
-- [x] **Phase 1:** `npx tsx src/index.ts --test-providers` shows all 4 providers connected
+- [x] **Phase 1:** `npm run test:providers` shows all 4 providers connected
 - [x] **Phase 2:** Each provider wrapper can query its model and return structured response
 - [x] **Phase 3:** Council queries all 4 models in parallel, handles failures gracefully
-- [x] ~~**Phase 4:**~~ ~~Consensus module~~ (**DEPRECATED** - removed in Phase 7)
-- [x] ~~**Phase 5:**~~ ~~Personal Brain post-processing~~ (**DEPRECATED** - removed in Phase 7)
-- [x] **Phase 6:** Full CLI flow works: ask question → see progress → get answer
-- [x] **Phase 7:** Daemon server running, CLI and MCP both work, Council returns critiques ✅ **Successfully tested with Claude Code - all 4 models responded in 19.7s**
-- [x] **Phase 9:** MCP spec compliance verified, security hardening complete, 62 tests passing ✅ **MVP COMPLETE**
-- [x] **Phase 10:** MCP hardening, attachments, JSON-RPC error normalization ✅
+- [x] **Phase 7:** Daemon server running, CLI and MCP both work, Council returns critiques
+- [x] **Phase 9:** MCP spec compliance verified, security hardening complete, 62 tests passing
+- [x] **Phase 10:** MCP hardening, attachments, JSON-RPC error normalization
 - [ ] **Phase 8:** Eval harness can validate Council provides useful help (deferred post-MVP)
 
-**Note:** MVP is complete after Phase 9. Phase 8 evaluation is deferred for manual qualitative testing first.
+**🎉 MVP COMPLETE!** Phases 1-3, 7, 9, 10
+- ✅ stdio, HTTP/Streamable, and SSE transport support
+- ✅ Comprehensive security hardening (rate limiting, sanitization, security headers)
+- ✅ 62 tests passing (40 security tests)
+- ✅ Full MCP spec compliance
+- ✅ Complete documentation (README, SECURITY, MCP_SETUP, ARCHITECTURE)
+- ✅ Successfully tested with Claude Code integration
+- 📅 Phase 8 evaluation deferred for post-MVP refinement
 
 ---
 
@@ -1137,20 +1065,11 @@ After each phase, verify:
 3. ✅ **Phase 3** - Council (parallel querying)
 4. ~~**Phase 4**~~ - ~~Consensus module~~ (**DEPRECATED**)
 5. ~~**Phase 5**~~ - ~~Personal Brain orchestration~~ (**DEPRECATED**)
-6. ✅ **Phase 6** - CLI (refactored in Phase 7)
+6. ~~**Phase 6**~~ - ~~Original CLI~~ (**DEPRECATED**)
 7. ✅ **Phase 7** - Council Daemon & MCP Integration (HTTP transport)
-8. ✅ **Phase 9** - **MCP Spec Compliance & Security Hardening** ✅ **MVP COMPLETE**
-9. ✅ **Phase 10** - MCP hardening, attachments, JSON-RPC errors
-10. 📅 **Phase 8** - Evaluation (deferred until after MVP - manual testing first)
-
-**🎉 MVP COMPLETE!** Phases 1-3, 7, 9, 10
-- ✅ stdio, HTTP/Streamable, and SSE transport support
-- ✅ Comprehensive security hardening (rate limiting, sanitization, security headers)
-- ✅ 62 tests passing (40 security tests)
-- ✅ Full MCP spec compliance
-- ✅ Complete documentation (README, SECURITY, MCP_SETUP)
-- ✅ Successfully tested with Claude Code integration
-- 📅 Phase 8 evaluation deferred for post-MVP refinement
+8. 📅 **Phase 8** - Evaluation (deferred until after MVP - manual testing first)
+9. ✅ **Phase 9** - MCP Spec Compliance & Security Hardening ✅ **MVP COMPLETE**
+10. ✅ **Phase 10** - MCP hardening, attachments, JSON-RPC errors
 
 ---
 
@@ -1161,15 +1080,16 @@ After each phase, verify:
 - **Council is the core** - simple parallel querying, no orchestration, no synthesis
   - Council just returns raw responses from all models
   - Clients decide what to do with the responses
-- Use official MCP SDK examples as reference for SSE transport integration
+- Use official MCP SDK examples as reference for transport integration
   - See `createMcpExpressApp` in MCP TypeScript SDK examples
   - Single Express server serves both HTTP and MCP endpoints
 - Handle API failures gracefully - if 1 Council model fails, continue with remaining 3
   - Use `Promise.allSettled()` for parallel queries
   - Return partial results when some models fail
 - Daemon architecture:
-  - Server runs persistently (for CLI)
-  - Claude Code spawns MCP connection via SSE
-  - Both use same underlying Council
-- Phase 7 focus: "Phone a friend" for AI agents (especially Claude Code)
-- Phases 4-5 (Brain orchestration, Consensus) are deprecated - removed in Phase 7 refactor
+  - Server runs persistently (for MCP clients)
+  - CLI makes HTTP requests to server
+  - Claude Code connects via stdio or HTTP MCP transport
+  - All use same underlying Council
+- Focus: "Phone a friend" for AI agents (especially Claude Code)
+- Phases 4-6 (Brain orchestration, Consensus, original CLI) are deprecated

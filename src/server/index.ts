@@ -58,7 +58,6 @@ app.get('/health', healthCheckRateLimiter, (_req: Request, res: Response) => {
       model_names: councilProviders.map((p) => p.name),
     },
     config: {
-      timeout_ms: config.timeoutMs,
       debug: config.debug,
     },
     ...(missingKeys.length > 0 ? { warnings: { missing_api_keys: missingKeys } } : {}),
