@@ -8,8 +8,8 @@ import { Provider, ProviderResponse, ProviderRequestOptions } from '../types.js'
  */
 export class GroqProvider implements Provider {
   public readonly name: string;
+  public readonly modelId: string;
   private readonly client: ReturnType<typeof createGroq>;
-  private readonly modelId: string;
 
   constructor(apiKey: string, modelId: string, displayName?: string) {
     this.client = createGroq({ apiKey });
@@ -35,6 +35,7 @@ export class GroqProvider implements Provider {
       return {
         content: result.text,
         provider: this.name,
+        modelId: this.modelId,
         latencyMs,
         tokensUsed: result.usage?.totalTokens,
       };

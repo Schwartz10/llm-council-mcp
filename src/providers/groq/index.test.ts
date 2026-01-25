@@ -12,6 +12,7 @@ describe('GroqProvider', () => {
 
     expect(provider).toBeDefined();
     expect(provider.name).toContain('Groq');
+    expect(provider.modelId).toBe(TEST_MODELS.groq);
   });
 
   it('should query successfully and return ProviderResponse', async () => {
@@ -26,6 +27,7 @@ describe('GroqProvider', () => {
     expect(typeof response.content).toBe('string');
     expect(response.content.length).toBeGreaterThan(0);
     expect(response.provider).toBe('Test Llama');
+    expect(response.modelId).toBe(TEST_MODELS.groq);
     expect(response.latencyMs).toBeGreaterThan(0);
   });
 

@@ -12,6 +12,7 @@ describe('AnthropicProvider', () => {
 
     expect(provider).toBeDefined();
     expect(provider.name).toContain('Anthropic');
+    expect(provider.modelId).toBe(TEST_MODELS.anthropic);
   });
 
   it('should query successfully and return ProviderResponse', async () => {
@@ -30,6 +31,7 @@ describe('AnthropicProvider', () => {
     expect(typeof response.content).toBe('string');
     expect(response.content.length).toBeGreaterThan(0);
     expect(response.provider).toBe('Test Claude');
+    expect(response.modelId).toBe(TEST_MODELS.anthropic);
     expect(response.latencyMs).toBeGreaterThan(0);
   });
 

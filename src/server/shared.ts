@@ -15,6 +15,7 @@ import { CouncilRequest, CouncilResponse, ModelCritique } from './types.js';
 import { normalizeAttachments } from './attachments.js';
 import { sanitizeCouncilRequest, sanitizeCouncilResponse } from './sanitize.js';
 import { toMcpError } from './mcp-errors.js';
+import { extractSynthesisData } from './synthesis.js';
 
 // Load configuration
 const config = loadConfig();
@@ -55,8 +56,8 @@ export function isCouncilInitialized(): boolean {
   return councilInitialized;
 }
 
-// Zod schema for council_consult tool input
-const CouncilConsultInputSchema = z
+// Zod schema for phone_council tool input
+const PhoneCouncilInputSchema = z
   .object({
     prompt: z
       .string()
@@ -84,17 +85,27 @@ const CouncilConsultInputSchema = z
       )
       .optional()
       .describe('Optional file attachments to include with the consultation'),
+    show_raw: z
+      .boolean()
+      .optional()
+      .describe('If true, skip synthesis data and return only raw model responses'),
   })
   .strict();
 
-type CouncilConsultInput = z.infer<typeof CouncilConsultInputSchema>;
+type PhoneCouncilInput = z.infer<typeof PhoneCouncilInputSchema>;
+
+const SYNTHESIS_INSTRUCTION =
+  'Read the council responses and structured synthesis_data. Use it to: (1) identify areas of consensus, (2) highlight disagreements, (3) extract key insights and attribute them, (4) form your updated position, (5) explain what changed your mind. Present a synthesized answer that shows you learned from the council.';
 
 /**
  * Core Council consultation logic (shared between all transports)
  */
-export async function consultCouncil(request: CouncilRequest): Promise<CouncilResponse> {
-  if (!councilInitialized || councilProviders.length === 0) {
-    throw new Error('Council not initialized. Please wait for server startup.');
+export async function consultCouncilWithProviders(
+  request: CouncilRequest,
+  providers: Provider[]
+): Promise<CouncilResponse> {
+  if (providers.length === 0) {
+    throw new Error('No Council providers available.');
   }
 
   // Sanitize inputs and detect injection attempts
@@ -112,7 +123,7 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     : sanitized.prompt;
 
   // Create Council instance and deliberate (no automatic timeout, only user cancellation via signal)
-  const council = new Council(councilProviders, {
+  const council = new Council(providers, {
     debug: config.debug,
   });
 
@@ -121,6 +132,8 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     signal: request.signal,
   });
 
+  const showRaw = request.show_raw === true;
+
   // Transform deliberation result to response format with output sanitization
   const critiques: ModelCritique[] = result.responses.map((response) => {
     const content = response.error || response.content;
@@ -128,6 +141,7 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
 
     return {
       model: response.provider,
+      model_id: response.modelId,
       response: sanitizedOutput.text,
       latency_ms: response.latencyMs,
       ...(response.error ? { error: response.error } : {}),
@@ -135,15 +149,34 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     };
   });
 
-  return {
+  const baseResponse: CouncilResponse = {
     critiques,
     summary: {
-      models_consulted: councilProviders.length,
+      models_consulted: providers.length,
       models_responded: result.successCount,
       models_failed: result.failureCount,
       total_latency_ms: result.totalLatencyMs,
     },
   };
+
+  if (showRaw) {
+    return baseResponse;
+  }
+
+  const synthesis_data = extractSynthesisData(critiques);
+  return {
+    ...baseResponse,
+    synthesis_data,
+    synthesis_instruction: SYNTHESIS_INSTRUCTION,
+  };
+}
+
+export async function consultCouncil(request: CouncilRequest): Promise<CouncilResponse> {
+  if (!councilInitialized || councilProviders.length === 0) {
+    throw new Error('Council not initialized. Please wait for server startup.');
+  }
+
+  return consultCouncilWithProviders(request, councilProviders);
 }
 
 // Create shared MCP server instance
@@ -156,11 +189,12 @@ export const mcpServer = new McpServer({
  * Register all MCP tools on the shared server instance
  */
 export function registerMcpTools(): void {
-  mcpServer.registerTool(
-    'council_consult',
-    {
-      title: 'Consult Council',
-      description: `Consult the Council of frontier AI models for alternative perspectives, critiques, and suggestions.
+  const registerCouncilTool = (toolName: 'phone_council' | 'council_consult', deprecated = false) =>
+    mcpServer.registerTool(
+      toolName,
+      {
+        title: deprecated ? 'Consult Council (Deprecated)' : 'Phone Council',
+        description: `Consult the Council of frontier AI models for alternative perspectives, critiques, and suggestions.
 
 This tool is designed for "Phone a Friend" scenarios - when you're uncertain or stuck, the Council provides independent critiques from multiple models to help you make better decisions.
 
@@ -177,6 +211,7 @@ Args:
   - prompt (string): The question or problem you need help with
   - context (string, optional): Additional context to help models understand the situation
   - attachments (array, optional): File attachments (base64/data URL or http(s) URL) for supported file types
+  - show_raw (boolean, optional): If true, omit synthesis fields and return only raw responses
 
 Returns:
   JSON object with schema:
@@ -184,6 +219,7 @@ Returns:
     "critiques": [
       {
         "model": string,        // Model name
+        "model_id": string,     // Concrete model identifier used
         "response": string,     // Model's critique/suggestion
         "latency_ms": number,   // Response time
         "error": string         // Present only if model failed
@@ -194,7 +230,17 @@ Returns:
       "models_responded": number,
       "models_failed": number,
       "total_latency_ms": number
-    }
+    },
+    "synthesis_data": {         // Omitted when show_raw=true
+      "agreement_points": string[],
+      "disagreements": Array<{
+        "topic": string,
+        "positions": Array<{ "models": string[], "view": string }>
+      }>,
+      "key_insights": Array<{ "model": string, "insight": string }>,
+      "confidence": number
+    },
+    "synthesis_instruction": string // Omitted when show_raw=true
   }
 
 Examples:
@@ -205,55 +251,83 @@ Examples:
 Error Handling:
   - Individual model failures are captured in the "error" field
   - The Council continues even if some models fail (partial results returned)
-  - Returns error if Council is not initialized`,
-      inputSchema: CouncilConsultInputSchema,
-      annotations: {
-        readOnlyHint: false, // Council queries external models
-        destructiveHint: false, // No destructive operations
-        idempotentHint: false, // Different responses each time
-        openWorldHint: true, // Interacts with external AI services
+  - Returns error if Council is not initialized${
+    deprecated ? '\n\nNote: This tool name is deprecated. Prefer `phone_council`.' : ''
+  }`,
+        inputSchema: PhoneCouncilInputSchema,
+        annotations: {
+          readOnlyHint: false, // Council queries external models
+          destructiveHint: false, // No destructive operations
+          idempotentHint: false, // Different responses each time
+          openWorldHint: true, // Interacts with external AI services
+        },
       },
-    },
-    async (params: CouncilConsultInput, extra) => {
-      try {
-        const result = await consultCouncil({
-          prompt: params.prompt,
-          context: params.context,
-          attachments: params.attachments,
-          signal: extra?.signal,
-        });
+      async (params: PhoneCouncilInput, extra) => {
+        try {
+          const result = await consultCouncil({
+            prompt: params.prompt,
+            context: params.context,
+            attachments: params.attachments,
+            show_raw: params.show_raw,
+            signal: extra?.signal,
+          });
 
-        // Format as both text (markdown) and structured data
-        const lines = [
-          '# Council Consultation Results',
-          '',
-          `**Models Responded:** ${result.summary.models_responded}/${result.summary.models_consulted}`,
-          `**Total Time:** ${(result.summary.total_latency_ms / 1000).toFixed(1)}s`,
-          '',
-        ];
+          // Format as both text (markdown) and structured data
+          const lines = [
+            '# Council Consultation Results',
+            '',
+            `**Models Responded:** ${result.summary.models_responded}/${result.summary.models_consulted}`,
+            `**Total Time:** ${(result.summary.total_latency_ms / 1000).toFixed(1)}s`,
+            '',
+          ];
 
-        for (const critique of result.critiques) {
-          if (critique.error) {
-            lines.push(`## ${critique.model} ✗`);
-            lines.push(`**Error:** ${critique.error}`);
-          } else {
-            lines.push(`## ${critique.model} ✓`);
-            lines.push(critique.response);
+          for (const critique of result.critiques) {
+            if (critique.error) {
+              lines.push(`## ${critique.model} ✗`);
+              lines.push(`**Model ID:** ${critique.model_id}`);
+              lines.push(`**Error:** ${critique.error}`);
+            } else {
+              lines.push(`## ${critique.model} ✓`);
+              lines.push(`**Model ID:** ${critique.model_id}`);
+              lines.push(critique.response);
+            }
+            lines.push('');
           }
-          lines.push('');
+
+          if (result.synthesis_data) {
+            lines.push('## Synthesis Summary');
+            lines.push(`**Confidence:** ${Math.round(result.synthesis_data.confidence * 100)}%`);
+            if (result.synthesis_data.agreement_points.length > 0) {
+              lines.push('');
+              lines.push('**Agreement Points:**');
+              for (const point of result.synthesis_data.agreement_points) {
+                lines.push(`- ${point}`);
+              }
+            }
+            if (result.synthesis_data.disagreements.length > 0) {
+              lines.push('');
+              lines.push('**Disagreements:**');
+              for (const disagreement of result.synthesis_data.disagreements) {
+                lines.push(`- ${disagreement.topic}`);
+              }
+            }
+            lines.push('');
+          }
+
+          const textContent = lines.join('\n');
+
+          return {
+            content: [{ type: 'text', text: textContent }],
+            structuredContent: result as unknown as Record<string, unknown>, // Modern pattern for structured data
+          };
+        } catch (error) {
+          throw toMcpError(error, config.debug);
         }
-
-        const textContent = lines.join('\n');
-
-        return {
-          content: [{ type: 'text', text: textContent }],
-          structuredContent: result as unknown as Record<string, unknown>, // Modern pattern for structured data
-        };
-      } catch (error) {
-        throw toMcpError(error, config.debug);
       }
-    }
-  );
+    );
+
+  registerCouncilTool('phone_council');
+  registerCouncilTool('council_consult', true);
 }
 
 // Register tools on module load

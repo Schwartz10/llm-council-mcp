@@ -143,7 +143,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
         id: 1,
         method: 'tools/call',
         params: {
-          name: 'council_consult',
+          name: 'phone_council',
           arguments: {
             prompt: question,
           },
@@ -182,9 +182,11 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
     for (const critique of councilResponse.critiques) {
       if (critique.error) {
         console.log(chalk.red.bold(`${critique.model} ✗`));
+        console.log(chalk.gray(`Model ID: ${critique.model_id}`));
         console.log(chalk.red(`Error: ${critique.error}\n`));
       } else {
         console.log(chalk.green.bold(`${critique.model} ✓`));
+        console.log(chalk.gray(`Model ID: ${critique.model_id}`));
         console.log(`${critique.response}\n`);
       }
     }

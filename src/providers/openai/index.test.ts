@@ -12,6 +12,7 @@ describe('OpenAIProvider', () => {
 
     expect(provider).toBeDefined();
     expect(provider.name).toContain('OpenAI');
+    expect(provider.modelId).toBe(TEST_MODELS.openai);
   });
 
   it('should query successfully and return ProviderResponse', async () => {
@@ -26,6 +27,7 @@ describe('OpenAIProvider', () => {
     expect(typeof response.content).toBe('string');
     expect(response.content.length).toBeGreaterThan(0);
     expect(response.provider).toBe('Test GPT');
+    expect(response.modelId).toBe(TEST_MODELS.openai);
     expect(response.latencyMs).toBeGreaterThan(0);
   });
 
