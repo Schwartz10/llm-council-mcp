@@ -8,8 +8,8 @@ import { Provider, ProviderResponse, ProviderRequestOptions } from '../types.js'
  */
 export class AnthropicProvider implements Provider {
   public readonly name: string;
+  public readonly modelId: string;
   private readonly client: ReturnType<typeof createAnthropic>;
-  private readonly modelId: string;
 
   constructor(apiKey: string, modelId: string, displayName?: string) {
     this.client = createAnthropic({ apiKey });
@@ -35,6 +35,7 @@ export class AnthropicProvider implements Provider {
       return {
         content: result.text,
         provider: this.name,
+        modelId: this.modelId,
         latencyMs,
         tokensUsed: result.usage?.totalTokens,
       };

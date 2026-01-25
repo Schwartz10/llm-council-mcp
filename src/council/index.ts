@@ -94,6 +94,7 @@ export class Council {
         const errorResponse: ProviderResponse = {
           content: '',
           provider: provider.name,
+          modelId: provider.modelId,
           latencyMs: Date.now() - startTime,
           error: error instanceof Error ? error.message : String(error),
         };
@@ -121,6 +122,7 @@ export class Council {
         responses.push({
           content: '',
           provider: 'Unknown',
+          modelId: 'unknown',
           latencyMs: 0,
           error: result.reason instanceof Error ? result.reason.message : String(result.reason),
         });

@@ -2,10 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { validateOrigin } from './origin.js';
 
-function createReq(
-  headers: Record<string, string | undefined>,
-  path = '/'
-): Request {
+function createReq(headers: Record<string, string | undefined>, path = '/'): Request {
   return {
     get: (name: string) => headers[name.toLowerCase()],
     path,

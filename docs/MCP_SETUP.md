@@ -109,7 +109,7 @@ In Claude Code, try using the Council:
 Can you consult the Council about: "What is the best way to implement authentication in a Node.js app?"
 ```
 
-Claude Code should automatically invoke the `council_consult` tool and present you with responses from all configured models.
+Claude Code should automatically invoke the `phone_council` tool and present you with responses from all configured models.
 
 ## Using the Council in Claude Code
 
@@ -149,7 +149,7 @@ Claude: "Let me consult the Council for different debugging approaches..."
 ## Tool Details
 
 ### Tool Name
-`council_consult`
+`phone_council` (preferred) or `council_consult` (deprecated alias)
 
 ### Tool Parameters
 
@@ -157,6 +157,7 @@ Claude: "Let me consult the Council for different debugging approaches..."
 |-----------|------|----------|-------------|
 | `prompt` | string | Yes | The question or problem to consult about |
 | `context` | string | No | Additional context to help models understand |
+| `show_raw` | boolean | No | If true, omit synthesis fields and return only raw responses |
 
 ### Tool Response
 
@@ -167,6 +168,7 @@ The tool returns structured data with:
   critiques: [
     {
       model: string,        // Model name (e.g., "Claude Sonnet 4.5")
+      model_id: string,     // Concrete model identifier used (e.g., "gpt-4o")
       response: string,     // The model's response
       latency_ms: number,   // Response time in milliseconds
       error?: string        // Error message if model failed
@@ -177,7 +179,17 @@ The tool returns structured data with:
     models_responded: number,  // Models that succeeded
     models_failed: number,     // Models that failed
     total_latency_ms: number   // Total deliberation time
-  }
+  },
+  synthesis_data?: {
+    agreement_points: string[],
+    disagreements: Array<{
+      topic: string,
+      positions: Array<{ models: string[], view: string }>
+    }>,
+    key_insights: Array<{ model: string, insight: string }>,
+    confidence: number
+  },
+  synthesis_instruction?: string
 }
 ```
 

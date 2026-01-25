@@ -7,8 +7,8 @@ import { Provider, ProviderRequestOptions, ProviderResponse } from '../types.js'
  */
 export class GeminiProvider implements Provider {
   public readonly name: string;
+  public readonly modelId: string;
   private readonly client: ReturnType<typeof createGoogleGenerativeAI>;
-  private readonly modelId: string;
 
   constructor(apiKey: string, modelId: string, displayName?: string) {
     this.client = createGoogleGenerativeAI({ apiKey });
@@ -31,6 +31,7 @@ export class GeminiProvider implements Provider {
       return {
         content: result.text,
         provider: this.name,
+        modelId: this.modelId,
         latencyMs,
         tokensUsed: result.usage?.totalTokens,
       };

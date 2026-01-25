@@ -5,8 +5,10 @@ import type { Provider, ProviderResponse } from '../providers/types.js';
 describe('Council', () => {
   // Create mock providers for testing
   function createMockProvider(name: string, delay: number, shouldFail = false): Provider {
+    const modelId = `${name}-model`;
     return {
       name,
+      modelId,
       query: async (prompt: string, options?): Promise<ProviderResponse> => {
         // Simulate network delay with cancellation support
         await new Promise((resolve, reject) => {
@@ -33,6 +35,7 @@ describe('Council', () => {
         return {
           content: `Response from ${name} to: ${prompt}`,
           provider: name,
+          modelId,
           latencyMs: delay,
         };
       },

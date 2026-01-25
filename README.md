@@ -233,13 +233,14 @@ npx tsc --noEmit
 
 ## API Documentation
 
-### MCP Tool: council_consult
+### MCP Tool: phone_council
 
-Consult the Council via the Model Context Protocol.
+Consult the Council via the Model Context Protocol. The old `council_consult` name remains as a deprecated alias.
 
 **Parameters:**
 - `prompt` (string, required): The question or problem to consult about
 - `context` (string, optional): Additional context to help models understand
+- `show_raw` (boolean, optional): If true, omit synthesis fields and return only raw responses
 
 **Returns:**
 ```typescript
@@ -247,6 +248,7 @@ Consult the Council via the Model Context Protocol.
   critiques: [
     {
       model: string,        // Model name (e.g., "Claude Sonnet 4.5")
+      model_id: string,     // Concrete model identifier used (e.g., "gpt-4o")
       response: string,     // The model's response
       latency_ms: number,   // Response time in milliseconds
       error?: string        // Error message if model failed
@@ -257,7 +259,17 @@ Consult the Council via the Model Context Protocol.
     models_responded: number,  // Models that succeeded
     models_failed: number,     // Models that failed
     total_latency_ms: number   // Total deliberation time
-  }
+  },
+  synthesis_data?: {
+    agreement_points: string[],
+    disagreements: Array<{
+      topic: string,
+      positions: Array<{ models: string[], view: string }>
+    }>,
+    key_insights: Array<{ model: string, insight: string }>,
+    confidence: number
+  },
+  synthesis_instruction?: string
 }
 ```
 

@@ -55,7 +55,6 @@ GROQ_API_KEY=gsk_...
 
 # Optional Configuration
 PORT=3000                        # Server port (default: 3000)
-SECOND_BRAIN_TIMEOUT_MS=30000    # Timeout per model query (default: 30000ms)
 SECOND_BRAIN_DEBUG=false         # Enable debug logging
 ```
 
@@ -106,7 +105,6 @@ curl http://localhost:3000/health
     ]
   },
   "config": {
-    "timeout_ms": 30000,
     "debug": false
   }
 }
@@ -125,7 +123,7 @@ curl -X POST http://localhost:3000/mcp \
     "id": 1,
     "method": "tools/call",
     "params": {
-      "name": "council_consult",
+      "name": "phone_council",
       "arguments": {
         "prompt": "What is TypeScript?",
         "context": "I am learning web development"
@@ -150,6 +148,7 @@ curl -X POST http://localhost:3000/mcp \
       "critiques": [
         {
           "model": "Claude Sonnet 4.5",
+          "model_id": "claude-sonnet-4-5-20250929",
           "response": "TypeScript is...",
           "latency_ms": 1234
         },
@@ -160,7 +159,14 @@ curl -X POST http://localhost:3000/mcp \
         "models_responded": 5,
         "models_failed": 0,
         "total_latency_ms": 5678
-      }
+      },
+      "synthesis_data": {
+        "agreement_points": ["..."],
+        "disagreements": [],
+        "key_insights": [{ "model": "Claude Sonnet 4.5", "insight": "..." }],
+        "confidence": 0.82
+      },
+      "synthesis_instruction": "Read the council responses..."
     }
   }
 }
@@ -176,7 +182,7 @@ The Council consists of frontier AI models that provide independent critiques:
 4. **Grok 3 Beta** (xAI)
 5. **Llama 4 Maverick** (Groq) - with fallback to Llama 3.3
 
-All models are queried in parallel (30s timeout per model by default). If individual models fail, the Council continues with remaining models.
+All models are queried in parallel. There is no automatic per-model timeout; queries continue until completion or user cancellation. If individual models fail, the Council continues with remaining models.
 
 ## Error Handling
 

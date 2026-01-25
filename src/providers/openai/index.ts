@@ -8,8 +8,8 @@ import { Provider, ProviderResponse, ProviderRequestOptions } from '../types.js'
  */
 export class OpenAIProvider implements Provider {
   public readonly name: string;
+  public readonly modelId: string;
   private readonly client: ReturnType<typeof createOpenAI>;
-  private readonly modelId: string;
 
   constructor(apiKey: string, modelId: string, displayName?: string) {
     this.client = createOpenAI({ apiKey });
@@ -35,6 +35,7 @@ export class OpenAIProvider implements Provider {
       return {
         content: result.text,
         provider: this.name,
+        modelId: this.modelId,
         latencyMs,
         tokensUsed: result.usage?.totalTokens,
       };

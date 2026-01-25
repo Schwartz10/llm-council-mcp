@@ -11,6 +11,7 @@ describe('GeminiProvider', () => {
     const provider = new GeminiProvider(apiKeys.gemini!, TEST_MODELS.gemini);
     expect(provider).toBeDefined();
     expect(provider.name).toContain('Gemini');
+    expect(provider.modelId).toBe(TEST_MODELS.gemini);
   });
 
   it('should query model successfully', async () => {
@@ -22,6 +23,7 @@ describe('GeminiProvider', () => {
     expect(response).toBeDefined();
     expect(response.content).toBeTruthy();
     expect(response.provider).toBe('Test Gemini');
+    expect(response.modelId).toBe(TEST_MODELS.gemini);
     expect(response.latencyMs).toBeGreaterThan(0);
   });
 

@@ -18,6 +18,10 @@ export class FallbackProvider implements Provider {
     this.lastSuccessIndex = 0;
   }
 
+  get modelId(): string {
+    return this.providers[this.lastSuccessIndex]?.modelId ?? this.providers[0].modelId;
+  }
+
   private isHealthy(index: number): boolean {
     const lastFailure = this.failureTimestamps[index];
     if (!lastFailure) {

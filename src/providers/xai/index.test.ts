@@ -12,6 +12,7 @@ describe('XAIProvider', () => {
 
     expect(provider).toBeDefined();
     expect(provider.name).toContain('xAI');
+    expect(provider.modelId).toBe(TEST_MODELS.xai);
   });
 
   it('should query successfully and return ProviderResponse', async () => {
@@ -26,6 +27,7 @@ describe('XAIProvider', () => {
     expect(typeof response.content).toBe('string');
     expect(response.content.length).toBeGreaterThan(0);
     expect(response.provider).toBe('Test Grok');
+    expect(response.modelId).toBe(TEST_MODELS.xai);
     expect(response.latencyMs).toBeGreaterThan(0);
   });
 
