@@ -111,12 +111,15 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     ? `Context: ${sanitized.context}\n\nQuestion: ${sanitized.prompt}`
     : sanitized.prompt;
 
-  // Create Council instance and deliberate
+  // Create Council instance and deliberate (no automatic timeout, only user cancellation via signal)
   const council = new Council(councilProviders, {
-    timeoutMs: config.timeoutMs,
+    debug: config.debug,
   });
 
-  const result = await council.deliberate(fullPrompt, { attachments });
+  const result = await council.deliberate(fullPrompt, {
+    attachments,
+    signal: request.signal,
+  });
 
   // Transform deliberation result to response format with output sanitization
   const critiques: ModelCritique[] = result.responses.map((response) => {
@@ -211,12 +214,13 @@ Error Handling:
         openWorldHint: true, // Interacts with external AI services
       },
     },
-    async (params: CouncilConsultInput) => {
+    async (params: CouncilConsultInput, extra) => {
       try {
         const result = await consultCouncil({
           prompt: params.prompt,
           context: params.context,
           attachments: params.attachments,
+          signal: extra?.signal,
         });
 
         // Format as both text (markdown) and structured data

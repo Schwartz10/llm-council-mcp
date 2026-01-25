@@ -11,16 +11,14 @@ import type { DeliberationResult, ProgressCallback } from './types.js';
  * - Parallel execution with Promise.allSettled()
  * - Graceful handling of partial failures
  * - Progress callbacks for real-time UI updates
- * - 30s timeout per provider
+ * - User-cancellable via AbortSignal (no automatic timeout)
  */
 export class Council {
   private providers: Provider[];
-  private timeoutMs: number;
   private debug: boolean;
 
-  constructor(providers: Provider[], options?: { timeoutMs?: number; debug?: boolean }) {
+  constructor(providers: Provider[], options?: { debug?: boolean }) {
     this.providers = providers;
-    this.timeoutMs = options?.timeoutMs || 30000;
     this.debug = options?.debug || false;
   }
 
@@ -28,12 +26,19 @@ export class Council {
    * Queries all Council members in parallel
    *
    * @param prompt - The question to ask all Council members
-   * @param onProgress - Optional progress callback for UI updates
+   * @param options - Optional configuration for deliberation
+   * @param options.onProgress - Optional progress callback for UI updates
+   * @param options.attachments - Optional file attachments to include
+   * @param options.signal - Optional AbortSignal for user cancellation (no automatic timeout)
    * @returns Deliberation result with all responses and metadata
    */
   async deliberate(
     prompt: string,
-    options?: { onProgress?: ProgressCallback; attachments?: ProviderAttachment[] }
+    options?: {
+      onProgress?: ProgressCallback;
+      attachments?: ProviderAttachment[];
+      signal?: AbortSignal;
+    }
   ): Promise<DeliberationResult> {
     if (this.debug) {
       console.log(`[Council] Starting deliberation with ${this.providers.length} providers`);
@@ -43,30 +48,12 @@ export class Council {
     let completedCount = 0;
     const total = this.providers.length;
     const attachments = options?.attachments;
+    const signal = options?.signal;
 
-    // Create queries with timeout for each provider
+    // Create queries for each provider (no automatic timeout, only user cancellation)
     const queries = this.providers.map(async (provider) => {
       try {
-        const controller = new AbortController();
-        let timeoutId: NodeJS.Timeout | undefined;
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          timeoutId = setTimeout(() => {
-            controller.abort();
-            reject(new Error(`Timeout after ${this.timeoutMs}ms`));
-          }, this.timeoutMs);
-        });
-
-        let response: ProviderResponse;
-        try {
-          response = await Promise.race([
-            provider.query(prompt, { signal: controller.signal, attachments }),
-            timeoutPromise,
-          ]);
-        } finally {
-          if (timeoutId) {
-            clearTimeout(timeoutId);
-          }
-        }
+        const response = await provider.query(prompt, { signal, attachments });
 
         // Report progress
         completedCount++;
