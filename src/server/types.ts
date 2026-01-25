@@ -13,6 +13,7 @@ export interface CouncilRequest {
   prompt: string; // The question or prompt to consult Council about
   context?: string; // Optional additional context
   attachments?: ProviderAttachment[]; // Optional file attachments
+  signal?: AbortSignal; // Optional abort signal for user cancellation
 }
 
 /**

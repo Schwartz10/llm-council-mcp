@@ -89,7 +89,6 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
 │                                                                         │
 │  Responsibilities:                                                      │
 │   • Query all configured providers in parallel (Promise.allSettled)    │
-│   • 30s timeout per provider (configurable)                            │
 │   • Handle partial failures gracefully                                 │
 │   • Emit progress events for UI                                        │
 │   • Return DeliberationResult with all responses + metadata            │
@@ -224,7 +223,6 @@ Provider Factory:
 │  │    geminiApiKey?: string                                      │     │
 │  │    xaiApiKey?: string                                         │     │
 │  │    groqApiKey?: string                                        │     │
-│  │    timeoutMs: number (default: 30000)                         │     │
 │  │    debug: boolean (default: false)                            │     │
 │  │    brainModel: string (default: anthropic/claude-sonnet-4-5)  │     │
 │  │  }                                                             │     │
@@ -530,11 +528,10 @@ Provider Factory:
 ```
 Provider Level:
   • API errors caught and returned as ProviderResponse with error field
-  • Timeout handled per-provider (30s default)
   • Stack traces included for debugging
 
 Council Level:
-  • Promise.allSettled() ensures all providers complete/timeout
+  • Promise.allSettled() ensures all providers complete
   • Partial failures allowed (continue with remaining providers)
   • Minimum 1 success required for useful result
   • Progress callbacks report both success and failure
@@ -607,7 +604,6 @@ Council Tests (src/council/council.test.ts):
   • Test Council creation
   • Test parallel execution (verify timing)
   • Test partial failure handling
-  • Test timeout behavior
   • Test progress callbacks
   • Uses mock providers (no API calls)
 
@@ -824,12 +820,10 @@ Pre-processing (Brain):
 Parallel Querying (Council):
   • Latency: max(all_providers) + overhead
   • Typical: 2-5s (slowest provider wins)
-  • Timeout: 30s per provider
   • Failures don't block other providers
 
 Total (Pre-processing + Council):
   • Best case: ~3-6s (all providers fast)
-  • Worst case: ~30-33s (some providers timeout)
   • Typical: ~5-10s
 ```
 
@@ -869,7 +863,6 @@ GROQ_API_KEY=gsk_...
 
 # Optional
 BRAIN_MODEL=anthropic/claude-sonnet-4-5-20250929
-SECOND_BRAIN_TIMEOUT_MS=30000
 SECOND_BRAIN_DEBUG=false
 ```
 

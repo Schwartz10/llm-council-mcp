@@ -7,9 +7,24 @@ describe('Council', () => {
   function createMockProvider(name: string, delay: number, shouldFail = false): Provider {
     return {
       name,
-      query: async (prompt: string): Promise<ProviderResponse> => {
-        // Simulate network delay
-        await new Promise((resolve) => setTimeout(resolve, delay));
+      query: async (prompt: string, options?): Promise<ProviderResponse> => {
+        // Simulate network delay with cancellation support
+        await new Promise((resolve, reject) => {
+          const timeoutId = setTimeout(resolve, delay);
+
+          // Listen for abort signal
+          if (options?.signal) {
+            if (options.signal.aborted) {
+              clearTimeout(timeoutId);
+              reject(new Error('Operation was aborted'));
+              return;
+            }
+            options.signal.addEventListener('abort', () => {
+              clearTimeout(timeoutId);
+              reject(new Error('Operation was aborted'));
+            });
+          }
+        });
 
         if (shouldFail) {
           throw new Error(`Mock error from ${name}`);
@@ -57,7 +72,7 @@ describe('Council', () => {
     // Should take roughly the time of the slowest provider (not sum of all)
     // Add some buffer for overhead
     expect(totalTime).toBeLessThan(300); // Should be ~150ms, not 300ms
-    expect(totalTime).toBeGreaterThanOrEqual(150); // At least as long as slowest
+    expect(totalTime).toBeGreaterThanOrEqual(140); // Allow small timer jitter
 
     // Check responses
     expect(result.responses[0].content).toContain('Fast');
@@ -87,17 +102,21 @@ describe('Council', () => {
     expect(failedResponse?.content).toBe('');
   });
 
-  it('should handle timeout', async () => {
-    // Create a provider that takes longer than timeout
+  it('should handle user cancellation via AbortSignal', async () => {
+    // Create a provider that takes a long time
     const slowProvider = createMockProvider('VerySlow', 2000);
-    const council = new Council([slowProvider], { timeoutMs: 500 });
+    const council = new Council([slowProvider]);
 
-    const result = await council.deliberate('Test question');
+    // Create an AbortController and abort after 500ms
+    const controller = new AbortController();
+    setTimeout(() => controller.abort(), 500);
 
-    // Should fail due to timeout
+    const result = await council.deliberate('Test question', { signal: controller.signal });
+
+    // Should fail due to cancellation
     expect(result.successCount).toBe(0);
     expect(result.failureCount).toBe(1);
-    expect(result.responses[0].error).toContain('Timeout');
+    expect(result.responses[0].error).toBeDefined();
   }, 10000);
 
   it('should call progress callback for each completion', async () => {

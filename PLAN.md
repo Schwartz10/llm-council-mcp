@@ -110,13 +110,21 @@ Flow: Client → Council → 4 Models (parallel) → Critiques → Client
 
 ## Next Steps / Active Development
 
-### Phase 11: Core Improvements - "Phone a Friend" 🚀 **IN PROGRESS**
+### Phase 11: Council Tool Improvements 🚀 **IN PROGRESS**
 
-**Timeline:** Tomorrow (full day sprint)
-**Goal:** Fix critical issues and add key features for team usage
+**Timeline:** Today (focused sprint)
+**Goal:** Fix timeout issue and enhance council tool with synthesis and context validation
+
+**📋 Plan Review** (2026-01-24)
+
+Council consultation recommended enhancements:
+- **Task 11.2 (phone_council)**: Added structured synthesis extraction (agreement/disagreement/insights, confidence scoring)
+- **Task 11.3 (context sharing)**: Upgraded from docs-only to implementation + validation tools
+- **Individual model tool (phone_friend)**: Deferred to Phase 14 due to fuzzy matching complexity
+
+---
 
 #### Task 11.1: Fix Timeout Issue ⚡ **HIGHEST PRIORITY**
-
 **Problem:** 30s timeout causes failures on long responses, especially with complex prompts
 
 **Solution:** Remove automatic timeout, only respect user cancellation
@@ -137,129 +145,28 @@ Flow: Client → Council → 4 Models (parallel) → Critiques → Client
 - `src/server/shared.ts` - Pass abort capability through MCP
 
 **Acceptance criteria:**
-- [ ] No automatic timeout on council deliberation
-- [ ] Ctrl+C cleanly cancels in-progress requests
-- [ ] Models can take as long as needed to respond
-- [ ] Test with 5+ minute responses
+- [x] No automatic timeout on council deliberation
+- [x] Ctrl+C cleanly cancels in-progress requests (via AbortSignal)
+- [x] Models can take as long as needed to respond
+- [x] Test with AbortSignal cancellation (test added and passing)
 
-**Estimated time:** 2-3 hours
+**Implementation notes:**
+- Removed `timeoutMs` parameter from Council constructor
+- Updated Council.deliberate() to accept optional `signal?: AbortSignal` in options
+- Removed automatic timeout logic (Promise.race with timeout)
+- Updated consultCouncil() to pass AbortSignal from MCP request
+- Updated MCP tool handler to extract signal from `extra.signal`
+- All providers already support AbortSignal via Vercel AI SDK
+- Added test for user cancellation via AbortSignal
+- All 80 tests passing
 
----
-
-#### Task 11.2: Add Individual Model Tool 🎯 `phone_friend`
-
-**Goal:** Let users consult specific models instead of full council
-
-**Tool Design:**
-```typescript
-phone_friend({
-  model: string,  // Fuzzy-matched model identifier (see below)
-  prompt: string,
-  context?: string,
-  attachments?: Attachment[]
-})
-```
-
-**Model Matching Strategy:**
-
-The tool accepts flexible input and intelligently matches to available models:
-
-1. **Full ID with provider:** `"anthropic/claude-sonnet-4-5-20250929"` ✓
-2. **Short name:** `"claude-sonnet-4-5"`, `"gpt-5-2"`, `"grok-3-beta"` ✓
-3. **Fuzzy variations:** `"GPT 5 2"`, `"GPT5-2"`, `"gpt_5_2"` → normalized to `"gpt-5-2"` ✓
-4. **Provider defaults:** `"gpt"`, `"claude"`, `"grok"`, `"llama"` → use primary model ✓
-
-**Available models exposed in tool schema:**
-```typescript
-{
-  type: "string",
-  description: "Model to consult",
-  enum: [
-    // Full IDs (canonical)
-    "anthropic/claude-sonnet-4-5-20250929",
-    "anthropic/claude-sonnet-3-5-20241022",
-    "openai/gpt-5-2",
-    "openai/gpt-4o",
-    "openai/gpt-4-turbo",
-    "xai/grok-3-beta",
-    "groq/meta-llama/llama-4-maverick-17b-128e-instruct",
-    "groq/llama-3.3-70b-versatile",
-    // Short names (aliases)
-    "claude-sonnet-4-5",
-    "claude-sonnet-3-5",
-    "gpt-5-2",
-    "gpt-4o",
-    "gpt-4-turbo",
-    "grok-3-beta",
-    "llama-4-maverick",
-    "llama-3-3",
-    // Provider defaults
-    "claude",
-    "gpt",
-    "grok",
-    "llama"
-  ]
-}
-```
-
-**Fuzzy Matching Logic:**
-```typescript
-// Normalize input: lowercase, remove spaces/underscores, standardize separators
-"GPT 5 2" → "gpt-5-2"
-"claude_sonnet_4_5" → "claude-sonnet-4-5"
-"Grok3Beta" → "grok-3-beta"
-
-// Provider defaults
-"claude" → "anthropic/claude-sonnet-4-5-20250929" (primary)
-"gpt" → "openai/gpt-5-2" (primary)
-"grok" → "xai/grok-3-beta" (primary)
-"llama" → "groq/meta-llama/llama-4-maverick-17b-128e-instruct" (primary)
-
-// Match short name to full ID
-"claude-sonnet-4-5" → "anthropic/claude-sonnet-4-5-20250929"
-"gpt-4o" → "openai/gpt-4o"
-```
-
-**Implementation:**
-- Add `phone_friend` tool to MCP server
-- Create fuzzy matching function for model IDs
-- Support full IDs, short names, and provider defaults
-- Expose all options in tool schema for AI visibility
-- Return helpful error if no match found
-- Reuse existing provider infrastructure
-
-**Files to create/modify:**
-- `src/server/shared.ts` - Add phone_friend tool registration with enum
-- `src/server/types.ts` - Add PhoneFriendRequest type
-- `src/server/model-matcher.ts` - NEW: Fuzzy matching logic
-- `src/config.ts` - Add getAllAvailableModels() helper with aliases
-
-**Response format:**
-```typescript
-{
-  model: string,           // Full ID of model that responded
-  response: string,        // The model's answer
-  latency_ms: number,
-  tokens_used?: number
-}
-```
-
-**Acceptance criteria:**
-- [ ] Fuzzy matching works for various input formats
-- [ ] Provider defaults work ("gpt" → gpt-5-2)
-- [ ] Short names work ("gpt-4o")
-- [ ] Full IDs work ("openai/gpt-4o")
-- [ ] Helpful error for invalid input ("Did you mean: gpt-5-2, gpt-4o?")
-- [ ] Test all variations
-
-**Estimated time:** 3-4 hours (with fuzzy matching)
+**Estimated time:** 2-3 hours ✅ **COMPLETE**
 
 ---
 
-#### Task 11.3: Rename & Enhance Council Tool 🧠 `phone_council`
+#### Task 11.2: Rename & Enhance Council Tool 🧠 `phone_council`
 
-**Goal:** Rename `council_consult` to `phone_council` and add AI learning behavior
-
+**Goal:** Rename `council_consult` to `phone_council` and add AI learning behavior with structured synthesis
 **Tool Rename:**
 - `council_consult` → `phone_council` (better naming consistency)
 - Maintains backward compatibility initially, deprecate old name
@@ -276,7 +183,7 @@ User asks question
 ```
 User asks question
   → Claude Code gives initial answer
-  → User calls phone_council
+  → Claude Code calls phone_council (when uncertain or user requests it)
   → Council responds with critiques
   → Claude Code reads responses
   → Claude Code synthesizes and improves answer
@@ -294,23 +201,39 @@ phone_council({
 })
 ```
 
-**Enhanced Response Format:**
+**Enhanced Response Format (Structured Synthesis):**
 
 ```typescript
 {
   critiques: [
-    { model: "Claude Sonnet 4.5", response: "...", latency_ms: 1234 },
-    { model: "GPT-5.2", response: "...", latency_ms: 2345 },
-    { model: "Grok 3 Beta", response: "...", latency_ms: 3456 },
-    { model: "Llama 4 Maverick", response: "...", latency_ms: 4567 }
+    { model: "Claude Sonnet 4.5", model_id: "anthropic/...", response: "...", latency_ms: 1234 },
+    { model: "GPT-5.2", model_id: "openai/gpt-5-2", response: "...", latency_ms: 2345 },
+    { model: "Grok 3 Beta", model_id: "xai/grok-3-beta", response: "...", latency_ms: 3456 },
+    { model: "Llama 4 Maverick", model_id: "groq/...", response: "...", latency_ms: 4567 }
   ],
   summary: {
     models_consulted: 4,
     models_responded: 4,
     total_latency_ms: 11602
   },
-  synthesis_instruction: "Read these council responses carefully. Identify: (1) areas of agreement, (2) disagreements with your original answer, (3) new insights or corrections, (4) additional context you missed. Update your answer accordingly. If you change your position, explain what changed your mind and why. If you maintain your position despite disagreement, acknowledge the council's concerns and explain your reasoning. Present a synthesized, improved answer to the user.",
-  // synthesis_instruction is omitted if show_raw=true
+  synthesis_data: {
+    agreement_points: ["Topic 1", "Topic 2"],
+    disagreements: [
+      {
+        topic: "Topic name",
+        positions: [
+          { models: ["Model A"], view: "View 1" },
+          { models: ["Model B", "Model C"], view: "View 2" }
+        ]
+      }
+    ],
+    key_insights: [
+      { model: "Model name", insight: "Key insight text" }
+    ],
+    confidence: 0.85  // Overall agreement level (0-1)
+  },
+  synthesis_instruction: "Read the council responses and structured synthesis_data. Use it to: (1) identify areas of consensus, (2) highlight disagreements, (3) extract key insights and attribute them, (4) form your updated position, (5) explain what changed your mind. Present a synthesized answer that shows you learned from the council.",
+  // Both synthesis_data and synthesis_instruction are omitted if show_raw=true
 }
 ```
 
@@ -358,41 +281,75 @@ User wants to see unfiltered critiques.
 **Implementation:**
 - Rename tool from `council_consult` to `phone_council`
 - Add `show_raw` parameter (optional, default false)
-- Include `synthesis_instruction` in response when `show_raw=false`
-- Omit `synthesis_instruction` when `show_raw=true`
+- Extract structured synthesis data from council responses:
+  - Identify agreement points (all models say the same thing)
+  - Identify disagreements (models contradict each other)
+  - Extract key insights and attribute to specific models
+  - Calculate confidence score based on agreement level
+- Include model_id in each critique for auditability
+- Include both `synthesis_data` and `synthesis_instruction` when `show_raw=false`
+- Omit both when `show_raw=true`
 - Maintain backward compatibility (support both names initially)
 
-**Files to modify:**
-- `src/server/shared.ts` - Rename tool, add show_raw parameter
-- `src/server/types.ts` - Update PhoneCouncilRequest type
+**Files to create/modify:**
+- `src/server/shared.ts` - Rename tool, add show_raw parameter, synthesis extraction
+- `src/server/types.ts` - Add SynthesisData type, update PhoneCouncilResponse
+- `src/server/synthesis.ts` - Synthesis extraction logic (agreement/disagreement analysis)
 - `docs/MCP_SETUP.md` - Document new name and behavior
 
 **Acceptance criteria:**
 - [ ] Tool renamed to `phone_council`
 - [ ] `show_raw` parameter works correctly
+- [ ] Structured synthesis_data extracted from responses
+- [ ] Agreement points identified automatically
+- [ ] Disagreements detected and grouped by topic
+- [ ] Key insights attributed to specific models
+- [ ] Confidence score calculated (0-1)
+- [ ] model_id included in each critique
 - [ ] Synthesis instruction included when show_raw=false
 - [ ] AI reads and learns from council responses
 - [ ] AI explains what changed (if anything)
 - [ ] AI presents counter-arguments when disagreeing
 - [ ] Test scenarios: agreement, disagreement, correction, raw view
 
-**Estimated time:** 3-4 hours
+**Estimated time:** 5-6 hours (with structured synthesis extraction)
 
 ---
 
-#### Task 11.4: Improve Context Sharing 📎
+#### Task 11.3: Improve Context Sharing 📎
 
-**Goal:** Better context for code reviews, PRs, architecture questions
+**Goal:** Implement context validation and sharing tools (not just documentation)
 
-**Phase 11.4a: Test Existing Attachments** (1 hour)
-- Attachments already supported (Phase 10)
+**Phase 11.3a: Context Validation & Testing** (2 hours)
+- Build context validation tools
+  - Create helper to validate context before sending to council
+  - Warn if context will be truncated by provider limits
+  - Test what context actually reaches each model
+  - Document context limits per provider (Claude: 200k, GPT: 128k, etc.)
 - Test with real scenarios:
   - Code review: share file + related files
   - PR review: share git diff + description
   - Architecture question: share PLAN.md + ARCHITECTURE.md
+  - Large file: test truncation warnings
 - Gather feedback on what context is missing
 
-**Phase 11.4b: Document Best Practices** (1 hour)
+**Phase 11.3b: Context Budget Controls** (1.5 hours)
+- Implement context management tools
+  - Max tokens/fields limits per request
+  - Automatic truncation with warnings
+  - Redaction helpers (strip secrets, emails, etc.)
+  - Context size estimation before sending
+- Recommended brief schema
+  ```typescript
+  interface ContextBrief {
+    goal: string;           // What you're trying to achieve
+    constraints: string[];  // Known limitations
+    relevant_facts: string[]; // Key information models need
+    avoid: string[];        // What NOT to consider
+  }
+  ```
+
+**Phase 11.3c: Document Best Practices** (1 hour)
 - Create `docs/CONTEXT_GUIDE.md`
 - Examples of good context for different scenarios:
   - **Code review:** File path, related files, project structure, error messages
@@ -400,8 +357,10 @@ User wants to see unfiltered critiques.
   - **Architecture decision:** Existing docs, constraints, requirements
   - **Bug fix:** Stack trace, reproduction steps, environment info
   - **Feature request:** User story, acceptance criteria, related features
+- Context truncation examples
+- Budget management guidance
 
-**Phase 11.4c: Smart Context Detection** (Future phase)
+**Phase 11.3d: Smart Context Detection** (Future phase - deferred)
 - Auto-detect context type from prompt
 - Suggest relevant files based on imports/dependencies
 - Parse project structure automatically
@@ -409,15 +368,28 @@ User wants to see unfiltered critiques.
 - *Deferred until we have usage data*
 
 **Files to create:**
-- `docs/CONTEXT_GUIDE.md` - Best practices for context sharing
+- `src/server/context-validator.ts` - Context validation and budget controls
+- `src/server/types.ts` - Add ContextBrief interface
+- `docs/CONTEXT_GUIDE.md` - Best practices with validation examples
+
+**Files to modify:**
+- `src/server/shared.ts` - Add context validation before council queries
 
 **Acceptance criteria:**
-- [ ] Test attachments with 5+ real scenarios
+- [ ] Context validation helper warns about truncation
+- [ ] Provider context limits documented (tokens/model)
+- [ ] Context budget controls enforce limits
+- [ ] Redaction helpers strip sensitive data
+- [ ] Context brief schema available for structured input
+- [ ] Test attachments with 5+ real scenarios including large files
+- [ ] Test validation warnings trigger correctly
 - [ ] Document what works well
 - [ ] Identify gaps for future improvement
-- [ ] Create usage examples
+- [ ] Create usage examples with validation
 
-**Estimated time:** 2 hours
+**Estimated time:** 4-5 hours (implementation + validation, not just docs)
+
+**Note:** Can work in parallel with 11.2 development and testing
 
 ---
 
@@ -826,7 +798,83 @@ Server: localhost:3000
 
 ---
 
-### Phase 14: Evaluation Module 📊 **FUTURE**
+### Phase 14: Individual Model Tool 🎯 **FUTURE**
+
+**Timeline:** After Phase 11-13 (deferred due to complexity)
+**Goal:** Add `phone_friend` tool for consulting specific models
+
+---
+
+#### Task 14.1: Add Individual Model Tool `phone_friend`
+
+**Goal:** Let users consult specific models instead of full council
+
+**Tool Design:**
+```typescript
+phone_friend({
+  model: string,  // Fuzzy-matched model identifier
+  prompt: string,
+  context?: string,
+  attachments?: Attachment[]
+})
+```
+
+**Model Matching Strategy:**
+
+The tool accepts flexible input and intelligently matches to available models:
+
+1. **Full ID with provider:** `"anthropic/claude-sonnet-4-5-20250929"` ✓ (canonical)
+2. **Short name:** `"claude-sonnet-4-5"`, `"gpt-5-2"`, `"grok-3-beta"` ✓ (aliases)
+3. **Fuzzy variations:** `"GPT 5 2"`, `"GPT5-2"`, `"gpt_5_2"` → normalized to `"gpt-5-2"` ✓
+4. **Provider defaults:** `"gpt"`, `"claude"`, `"grok"`, `"llama"` → use primary model ✓
+
+**Fuzzy Matching Logic:**
+- Normalize input (lowercase, remove spaces/underscores, standardize separators)
+- Try exact match against stable IDs and aliases
+- Try fuzzy match with confidence scoring (Levenshtein distance)
+- Confidence >= 80%: auto-accept
+- Confidence 50-80%: return "did you mean?" with top 3 suggestions
+- Confidence < 50%: reject with error and list available models
+- Log matches for debugging
+
+**Implementation:**
+- Add `phone_friend` tool to MCP server
+- Create fuzzy matching function with confidence scoring
+- Support full IDs, short names, and fuzzy variants
+- Expose all model options in tool schema
+- Return helpful suggestions for ambiguous matches
+- Reuse existing provider infrastructure
+
+**Files to create/modify:**
+- `src/server/shared.ts` - Add phone_friend tool registration
+- `src/server/types.ts` - Add PhoneFriendRequest type
+- `src/server/model-matcher.ts` - Fuzzy matching logic
+- `src/config.ts` - Add getAllAvailableModels() helper
+
+**Response format:**
+```typescript
+{
+  model: string,           // Full ID of model that responded
+  response: string,        // The model's answer
+  latency_ms: number,
+  tokens_used?: number
+}
+```
+
+**Acceptance criteria:**
+- [ ] Stable IDs work as canonical identifiers
+- [ ] Provider defaults work ("gpt" → gpt-5-2)
+- [ ] Short names and full IDs work
+- [ ] Fuzzy matching with confidence thresholds
+- [ ] "Did you mean?" suggestions for ambiguous matches
+- [ ] Match logging for debugging
+- [ ] Comprehensive tests for variations and edge cases
+
+**Estimated time:** 4-5 hours
+
+---
+
+### Phase 15: Evaluation Module 📊 **FUTURE**
 
 **Status:** Deferred until after Phase 11-13 completion
 

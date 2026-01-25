@@ -182,7 +182,6 @@ Environment variables (`.env` file):
 PORT=3000                        # Server port (default: 3000)
 
 # Council Configuration
-SECOND_BRAIN_TIMEOUT_MS=30000    # Timeout per model query (default: 30000ms)
 SECOND_BRAIN_DEBUG=false         # Enable debug logging
 ```
 
@@ -299,7 +298,6 @@ Consult the Council via the Model Context Protocol.
 
 - **Parallel execution**: All configured models queried simultaneously
 - **Typical response time**: 5-15 seconds for all models
-- **Timeout**: 30 seconds per model by default (configurable)
 - **Partial results**: Continues even if some models fail
 
 ## Tech Stack
@@ -362,7 +360,6 @@ See [docs/SECURITY.md](./docs/SECURITY.md) for comprehensive security documentat
 - Verify API keys in `.env`
 - Test providers: `npm run test:providers`
 - Check API key permissions and quotas
-- Try increasing timeout: `SECOND_BRAIN_TIMEOUT_MS=60000`
 
 ### CLI can't connect
 - Ensure server is running: `npm run server`
