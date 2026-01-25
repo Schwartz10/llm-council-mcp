@@ -2,9 +2,13 @@ import { describe, expect, test, vi } from 'vitest';
 import type { Request, Response, NextFunction } from 'express';
 import { validateOrigin } from './origin.js';
 
-function createReq(headers: Record<string, string | undefined>): Request {
+function createReq(
+  headers: Record<string, string | undefined>,
+  path = '/'
+): Request {
   return {
     get: (name: string) => headers[name.toLowerCase()],
+    path,
   } as unknown as Request;
 }
 
@@ -41,7 +45,7 @@ describe('validateOrigin', () => {
   });
 
   test('rejects missing origin header', () => {
-    const req = createReq({ host: 'localhost:3000' });
+    const req = createReq({ host: 'localhost:3000' }, '/health');
     const res = createRes();
     const next = vi.fn();
 
@@ -53,6 +57,17 @@ describe('validateOrigin', () => {
       message: 'Origin header is required',
     });
     expect(next).not.toHaveBeenCalled();
+  });
+
+  test('allows missing origin header on /mcp', () => {
+    const req = createReq({ host: 'localhost:3000' }, '/mcp');
+    const res = createRes();
+    const next = vi.fn();
+
+    validateOrigin(req, res, next as NextFunction);
+
+    expect(res.statusCode).toBe(200);
+    expect(next).toHaveBeenCalledTimes(1);
   });
 
   test('rejects invalid host', () => {

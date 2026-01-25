@@ -35,6 +35,11 @@ export function validateOrigin(req: Request, res: Response, next: NextFunction):
   }
 
   if (!origin) {
+    // Non-browser MCP clients typically omit Origin; allow this for MCP routes.
+    if (req.path.startsWith('/mcp')) {
+      next();
+      return;
+    }
     res.status(400).json({
       error: 'Bad Request',
       message: 'Origin header is required',
