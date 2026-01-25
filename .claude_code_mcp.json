@@ -1,8 +1,7 @@
 {
   "mcpServers": {
     "council-daemon": {
-      "command": "node",
-      "args": ["/Users/jonathanschwartz/Documents/glif/second-brain/dist/server/stdio.js"]
+      "url": "http://127.0.0.1:3000/mcp"
     }
   }
 }
