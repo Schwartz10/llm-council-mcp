@@ -4,6 +4,57 @@ A daemon service that provides parallel consultation with frontier AI models. Mu
 
 **Primary Use Case:** "Phone a Friend" - when an AI agent (like Claude Code) is uncertain or stuck, it can consult the Council for independent perspectives from multiple models.
 
+## Get Started
+
+### 1. Download and Install
+
+```bash
+git clone https://github.com/Schwartz10/second-brain.git
+cd second-brain
+npm install
+cp .env.example .env
+```
+
+Add at least one API key in `.env`:
+- `ANTHROPIC_API_KEY`
+- `OPENAI_API_KEY`
+- `GEMINI_API_KEY`
+- `XAI_API_KEY`
+- `GROQ_API_KEY`
+
+Build the server:
+
+```bash
+npm run build
+```
+
+### 2. Run the MCP Server
+
+```bash
+npm run server
+```
+
+The server listens on `http://localhost:3000` by default.
+
+### 3. Install the Context Skill (Optional)
+
+The repo includes an associated Codex skill to help craft strong `phone_council` context:
+
+- Skill source: `.agents/skills/phone-council-context`
+
+Install by copying that folder into your Codex skills directory, or package it with your skill tooling if you prefer distributing a `.skill` file.
+
+### 4. Use the Council
+
+CLI:
+
+```bash
+second-brain ask "What is the best way to handle errors in TypeScript?"
+```
+
+Claude Code integration:
+- See `docs/MCP_SETUP.md` for MCP setup steps.
+
 ## Architecture
 
 ```
@@ -42,65 +93,7 @@ The Council consists of frontier AI models that provide independent critiques:
 All models are queried in parallel. If individual models fail, the Council continues with remaining models.
 
 ## Installation
-
-1. Clone the repository:
-```bash
-git clone https://github.com/Schwartz10/second-brain.git
-cd second-brain
-```
-
-2. Install dependencies:
-```bash
-npm install
-```
-
-3. Set up your API keys:
-```bash
-cp .env.example .env
-# Edit .env and add your API keys
-```
-
-Required API keys (you need at least one):
-- `ANTHROPIC_API_KEY` - Get from [Anthropic Console](https://console.anthropic.com/)
-- `OPENAI_API_KEY` - Get from [OpenAI Platform](https://platform.openai.com/)
-- `GEMINI_API_KEY` - Get from [Google AI Studio](https://aistudio.google.com/app/apikey)
-- `XAI_API_KEY` - Get from [xAI Console](https://console.x.ai/)
-- `GROQ_API_KEY` - Get from [Groq Console](https://console.groq.com/)
-
-4. Build the project:
-```bash
-npm run build
-```
-
-## Quick Start
-
-### 1. Start the Council Server
-
-```bash
-npm run server
-```
-
-The server will start on http://localhost:3000 by default.
-
-### 2. Consult the Council via CLI
-
-In a new terminal:
-
-```bash
-second-brain ask "What is the best way to handle errors in TypeScript?"
-```
-
-The CLI will:
-1. Connect to the Council server
-2. Send your question to all configured models in parallel
-3. Display independent responses from each model
-4. Show timing and success metrics
-
-### 3. Integrate with Claude Code
-
-See [docs/MCP_SETUP.md](./docs/MCP_SETUP.md) for instructions on integrating with Claude Code.
-
-Once configured, Claude Code can consult the Council directly when working on your code.
+Installation and quick start are covered in **Get Started** above.
 
 ## Usage
 
