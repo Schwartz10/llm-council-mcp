@@ -353,15 +353,15 @@ User wants to see unfiltered critiques.
   ```
 
 **Phase 11.3c: Document Best Practices** (1 hour)
-- Create `docs/CONTEXT_GUIDE.md`
-- Examples of good context for different scenarios:
+- [x] Create `docs/CONTEXT_GUIDE.md`
+- [x] Examples of good context for different scenarios:
   - **Code review:** File path, related files, project structure, error messages
   - **PR review:** Description, changed files, test results, deployment context
   - **Architecture decision:** Existing docs, constraints, requirements
   - **Bug fix:** Stack trace, reproduction steps, environment info
   - **Feature request:** User story, acceptance criteria, related features
-- Context truncation examples
-- Budget management guidance
+- [x] Context truncation examples
+- [x] Budget management guidance
 
 **Phase 11.3d: Smart Context Detection** (Future phase - deferred)
 - Auto-detect context type from prompt
