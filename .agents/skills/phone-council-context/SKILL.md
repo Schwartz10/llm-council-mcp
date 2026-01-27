@@ -16,6 +16,16 @@ Provide concise, high-signal context for `phone_council` requests. This skill fo
 - Include only the most relevant excerpts.
 - Reserve budget for the model response.
 
+## Model Selection Flow
+
+If the user requests a specific model (e.g., "use Claude" or "phone anthropic"), translate that intent into the `models` array for `phone_council`.
+
+When model names are uncertain, use this flow:
+1. Call `list_models` to retrieve the exact available model names.
+2. Pass one or more returned names to `phone_council` via the `models` parameter.
+
+This avoids guessing and ensures the server accepts the model selection.
+
 ## Recommended Brief
 
 Use a concise schema for repeatable structure:

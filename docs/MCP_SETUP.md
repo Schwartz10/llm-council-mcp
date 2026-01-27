@@ -158,6 +158,20 @@ Claude: "Let me consult the Council for different debugging approaches..."
 | `prompt` | string | Yes | The question or problem to consult about |
 | `context` | string | No | Additional context to help models understand |
 | `show_raw` | boolean | No | If true, omit synthesis fields and return only raw responses |
+| `models` | string[] | No | Subset of models to consult (e.g., `["claude", "gpt"]`) |
+
+Allowed model identifiers: `claude`, `gpt`, `gemini`, `grok`, `llama` (case-insensitive), or full display names.
+
+### Selecting a Subset of Models
+
+If you want to consult only certain models (for speed or cost), provide the `models` array:
+
+```json
+{
+  "prompt": "Review this TypeScript code for edge cases",
+  "models": ["claude", "gpt"]
+}
+```
 
 ### Tool Response
 
@@ -190,6 +204,44 @@ The tool returns structured data with:
     confidence: number
   },
   synthesis_instruction?: string
+}
+```
+
+### Tool Name
+`list_models`
+
+### Tool Response
+
+```typescript
+{
+  models: Array<{
+    name: string,     // Display name (e.g., "Claude Sonnet 4.5")
+    model_id: string  // Concrete model identifier (e.g., "claude-sonnet-4-5-20250929")
+  }>
+}
+```
+
+### Example Call Flow (list_models → phone_council)
+
+Use `list_models` to discover available model names, then pass one or more names to `phone_council`:
+
+```json
+// 1) Discover model names
+{
+  "method": "tools/call",
+  "params": { "name": "list_models", "arguments": {} }
+}
+
+// 2) Use a returned name in phone_council
+{
+  "method": "tools/call",
+  "params": {
+    "name": "phone_council",
+    "arguments": {
+      "prompt": "Review this code for edge cases",
+      "models": ["Claude Sonnet 4.5"]
+    }
+  }
 }
 ```
 

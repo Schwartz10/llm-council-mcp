@@ -4,15 +4,17 @@
 
 Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
 
-**Status:** Phase 11.2 Complete - Council daemon with structured synthesis and MCP tool improvements
+**Status:** Phase 12 Complete - Subset council selection for MCP tool requests
 
 ---
 
-## MCP Tooling (Phase 11.2)
+## MCP Tooling (Phase 12)
 
 - Preferred tool name: `phone_council`
 - Deprecated alias: `council_consult`
+- New discovery tool: `list_models` to enumerate available Council model names
 - New input flag: `show_raw?: boolean` to omit synthesis fields
+- New input flag: `models?: string[]` to query a subset of Council models
 - Each critique now includes `model_id` (the concrete model identifier used)
 - Structured synthesis data is extracted server-side:
   agreement points, disagreements by topic, key insights by model, and a 0-1 confidence score
@@ -916,6 +918,6 @@ Each module (Brain, Council, Consensus, Providers) is independent and loosely co
 
 ---
 
-**Document Version:** 1.2
-**Last Updated:** Phase 6 Complete - MVP READY (2025-01-21)
-**Status:** MVP Complete - Extended Features In Progress
+**Document Version:** 1.3
+**Last Updated:** 2026-01-27
+**Status:** MVP In Progress - Phase 12 Complete
