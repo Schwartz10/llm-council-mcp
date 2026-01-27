@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { Council } from '../council/index.js';
 import { Provider } from '../providers/types.js';
 import { createCouncilProviders } from '../providers/index.js';
-import { loadConfig } from '../config.js';
+import { COUNCIL_MODELS, loadConfig } from '../config.js';
 import { CouncilRequest, CouncilResponse, ModelCritique } from './types.js';
 import { normalizeAttachments } from './attachments.js';
 import { sanitizeCouncilRequest, sanitizeCouncilResponse } from './sanitize.js';
@@ -56,6 +56,95 @@ export function isCouncilInitialized(): boolean {
   return councilInitialized;
 }
 
+const MODEL_ALIASES: Record<string, string> = {
+  claude: 'Claude Sonnet 4.5',
+  gpt: 'GPT',
+  gemini: 'Gemini',
+  grok: 'Grok',
+  llama: 'Llama 4 Maverick',
+};
+
+const configuredModelsByName = new Map(
+  COUNCIL_MODELS.map((model) => [normalizeModelName(model.name), model.name])
+);
+
+function normalizeModelName(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+export function selectCouncilProviders(
+  requestedModels: string[] | undefined,
+  providers: Provider[]
+): Provider[] {
+  if (!requestedModels || requestedModels.length === 0) {
+    return providers;
+  }
+
+  const providersByName = new Map(
+    providers.map((provider) => [normalizeModelName(provider.name), provider])
+  );
+  const selected: Provider[] = [];
+  const seen = new Set<string>();
+  const unknown: string[] = [];
+  const unavailable: string[] = [];
+
+  for (const rawModel of requestedModels) {
+    const normalized = normalizeModelName(rawModel);
+    if (!normalized) {
+      continue;
+    }
+
+    const canonicalName = MODEL_ALIASES[normalized] ?? configuredModelsByName.get(normalized);
+
+    if (!canonicalName) {
+      unknown.push(rawModel);
+      continue;
+    }
+
+    const provider = providersByName.get(normalizeModelName(canonicalName));
+    if (!provider) {
+      unavailable.push(canonicalName);
+      continue;
+    }
+
+    if (!seen.has(provider.name)) {
+      selected.push(provider);
+      seen.add(provider.name);
+    }
+  }
+
+  if (unknown.length > 0 || unavailable.length > 0) {
+    const availableNames = providers.map((provider) => provider.name).sort();
+    const unknownList = Array.from(new Set(unknown));
+    const unavailableList = Array.from(new Set(unavailable));
+
+    let message = 'Requested models are not available.';
+    if (unknownList.length > 0) {
+      message += ` Unknown model name(s): ${unknownList.join(', ')}.`;
+    }
+    if (unavailableList.length > 0) {
+      message += ` Not configured or unavailable: ${unavailableList.join(', ')}.`;
+    }
+    message += ` Available models: ${availableNames.join(', ') || 'none'}.`;
+    throw new Error(message);
+  }
+
+  if (selected.length === 0) {
+    throw new Error('No matching Council models found for the request.');
+  }
+
+  return selected;
+}
+
+export function listCouncilModels(
+  providers: Provider[]
+): Array<{ name: string; model_id: string }> {
+  return providers.map((provider) => ({
+    name: provider.name,
+    model_id: provider.modelId,
+  }));
+}
+
 // Zod schema for phone_council tool input
 const PhoneCouncilInputSchema = z
   .object({
@@ -89,10 +178,17 @@ const PhoneCouncilInputSchema = z
       .boolean()
       .optional()
       .describe('If true, skip synthesis data and return only raw model responses'),
+    models: z
+      .array(z.string().min(1))
+      .optional()
+      .describe('Optional list of model identifiers to consult (e.g., ["claude", "gpt"])'),
   })
   .strict();
 
 type PhoneCouncilInput = z.infer<typeof PhoneCouncilInputSchema>;
+
+const ListModelsInputSchema = z.object({}).strict();
+type ListModelsInput = z.infer<typeof ListModelsInputSchema>;
 
 const SYNTHESIS_INSTRUCTION =
   'Read the council responses and structured synthesis_data. Use it to: (1) identify areas of consensus, (2) highlight disagreements, (3) extract key insights and attribute them, (4) form your updated position, (5) explain what changed your mind. Present a synthesized answer that shows you learned from the council.';
@@ -176,7 +272,9 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
     throw new Error('Council not initialized. Please wait for server startup.');
   }
 
-  return consultCouncilWithProviders(request, councilProviders);
+  const selectedProviders = selectCouncilProviders(request.models, councilProviders);
+
+  return consultCouncilWithProviders(request, selectedProviders);
 }
 
 // Create shared MCP server instance
@@ -212,6 +310,8 @@ Args:
   - context (string, optional): Additional context to help models understand the situation
   - attachments (array, optional): File attachments (base64/data URL or http(s) URL) for supported file types
   - show_raw (boolean, optional): If true, omit synthesis fields and return only raw responses
+  - models (array, optional): Subset of models to consult (e.g., ["claude", "gpt"])
+    Accepted identifiers: claude, gpt, gemini, grok, llama (case-insensitive), or full display names.
 
 Returns:
   JSON object with schema:
@@ -247,6 +347,7 @@ Examples:
   - Use when: You're stuck debugging a complex issue -> consult Council for alternative approaches
   - Use when: You need to make an architectural decision -> get multiple perspectives
   - Use when: You're uncertain about code correctness -> get critiques from different models
+  - Use when: You want to limit cost/speed -> specify a subset with models
 
 Error Handling:
   - Individual model failures are captured in the "error" field
@@ -269,6 +370,7 @@ Error Handling:
             context: params.context,
             attachments: params.attachments,
             show_raw: params.show_raw,
+            models: params.models,
             signal: extra?.signal,
           });
 
@@ -328,6 +430,50 @@ Error Handling:
 
   registerCouncilTool('phone_council');
   registerCouncilTool('council_consult', true);
+
+  mcpServer.registerTool(
+    'list_models',
+    {
+      title: 'List Council Models',
+      description: `List the currently available Council models by name.
+
+Use this tool to discover the exact model names that can be passed to phone_council.
+
+Returns:
+  JSON object with schema:
+  {
+    "models": [
+      {
+        "name": string,        // Display name (e.g., "Claude Sonnet 4.5")
+        "model_id": string     // Concrete model identifier used (e.g., "claude-sonnet-4-5-20250929")
+      }
+    ]
+  }`,
+      inputSchema: ListModelsInputSchema,
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    (_params: ListModelsInput) => {
+      if (!councilInitialized || councilProviders.length === 0) {
+        throw new Error('Council not initialized. Please wait for server startup.');
+      }
+
+      const models = listCouncilModels(councilProviders);
+      const lines = ['# Available Council Models', ''];
+      for (const model of models) {
+        lines.push(`- ${model.name} (${model.model_id})`);
+      }
+
+      return {
+        content: [{ type: 'text', text: lines.join('\n') }],
+        structuredContent: { models },
+      };
+    }
+  );
 }
 
 // Register tools on module load

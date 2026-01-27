@@ -234,10 +234,13 @@ Consult the Council via the Model Context Protocol. The old `council_consult` na
 - `prompt` (string, required): The question or problem to consult about
 - `context` (string, optional): Additional context to help models understand
 - `show_raw` (boolean, optional): If true, omit synthesis fields and return only raw responses
+- `models` (string[], optional): Subset of models to consult (e.g., `["claude", "gpt"]`)
+
+Allowed model identifiers: `claude`, `gpt`, `gemini`, `grok`, `llama` (case-insensitive), or full display names.
 
 **Returns:**
 ```typescript
-{
+  {
   critiques: [
     {
       model: string,        // Model name (e.g., "Claude Sonnet 4.5")
@@ -263,6 +266,20 @@ Consult the Council via the Model Context Protocol. The old `council_consult` na
     confidence: number
   },
   synthesis_instruction?: string
+}
+```
+
+### MCP Tool: list_models
+
+List the currently available Council models by name and model id.
+
+**Returns:**
+```typescript
+{
+  models: Array<{
+    name: string,     // Display name (e.g., "Claude Sonnet 4.5")
+    model_id: string  // Concrete model identifier (e.g., "claude-sonnet-4-5-20250929")
+  }>
 }
 ```
 

@@ -15,6 +15,7 @@ export interface CouncilRequest {
   attachments?: ProviderAttachment[]; // Optional file attachments
   signal?: AbortSignal; // Optional abort signal for user cancellation
   show_raw?: boolean; // Optional flag to skip synthesis data and instruction
+  models?: string[]; // Optional list of model identifiers to query (e.g., ["claude", "gpt"])
 }
 
 /**

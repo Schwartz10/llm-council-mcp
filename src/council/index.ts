@@ -38,20 +38,23 @@ export class Council {
       onProgress?: ProgressCallback;
       attachments?: ProviderAttachment[];
       signal?: AbortSignal;
+      providers?: Provider[];
     }
   ): Promise<DeliberationResult> {
+    const providers = options?.providers ?? this.providers;
+
     if (this.debug) {
-      console.log(`[Council] Starting deliberation with ${this.providers.length} providers`);
+      console.log(`[Council] Starting deliberation with ${providers.length} providers`);
     }
 
     const startTime = Date.now();
     let completedCount = 0;
-    const total = this.providers.length;
+    const total = providers.length;
     const attachments = options?.attachments;
     const signal = options?.signal;
 
     // Create queries for each provider (no automatic timeout, only user cancellation)
-    const queries = this.providers.map(async (provider) => {
+    const queries = providers.map(async (provider) => {
       try {
         const response = await provider.query(prompt, { signal, attachments });
 
