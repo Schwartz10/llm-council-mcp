@@ -3,28 +3,28 @@
   "version": "1.0.0",
   "description": "LLM Council MCP server for consulting multiple frontier models in parallel",
   "type": "module",
-  "main": "dist/index.js",
+  "main": "dist/src/index.js",
   "bin": {
-    "llm-council": "./dist/index.js"
+    "llm-council": "./dist/src/index.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
     "server": "tsx src/server/index.ts",
     "server:stdio": "tsx src/server/stdio.ts",
-    "server:build": "node dist/server/index.js",
-    "server:stdio:build": "node dist/server/stdio.js",
+    "server:build": "node dist/src/server/index.js",
+    "server:stdio:build": "node dist/src/server/stdio.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:providers": "tsx src/index.ts --test-providers",
     "test:provider": "tsx src/index.ts --test-provider",
     "test:conformance:http": "npm run build && (npm run server:build & echo $! > /tmp/mcp-server.pid) && sleep 3 && npx @modelcontextprotocol/conformance server --url http://localhost:3000/mcp; EXIT_CODE=$?; kill $(cat /tmp/mcp-server.pid) 2>/dev/null || true; rm /tmp/mcp-server.pid 2>/dev/null || true; exit $EXIT_CODE",
-    "test:conformance:stdio": "npm run build && npx @modelcontextprotocol/conformance server --command 'node dist/server/stdio.js'",
+    "test:conformance:stdio": "npm run build && npx @modelcontextprotocol/conformance server --command 'node dist/src/server/stdio.js'",
     "test:conformance:all": "npm run test:conformance:http && npm run test:conformance:stdio",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\""
+    "lint": "eslint src/**/*.ts council.config.ts",
+    "lint:fix": "eslint src/**/*.ts council.config.ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"council.config.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"council.config.ts\""
   },
   "repository": {
     "type": "git",

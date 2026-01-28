@@ -58,7 +58,7 @@ stdio transport spawns the server as a subprocess and communicates via stdin/std
   "mcpServers": {
     "llm-council": {
       "command": "node",
-      "args": ["/path/to/llm-council-mcp/dist/server/stdio.js"],
+      "args": ["/path/to/llm-council-mcp/dist/src/server/stdio.js"],
       "description": "Consult frontier AI models for alternative perspectives"
     }
   }
@@ -321,16 +321,6 @@ You can run multiple Council servers with different configurations:
 1. Check your `.env` file has at least one API key
 2. Test providers: `npm run test:providers`
 3. Review server logs for error messages
-
-### "Request timeout"
-
-**Cause**: Council models are taking too long to respond.
-
-**Fix**:
-1. Increase timeout: Set `LLM_COUNCIL_TIMEOUT_MS=60000` in `.env`
-2. Restart the server
-3. Check your internet connection
-4. Verify API keys are valid
 
 ### Claude Code doesn't see the tool
 

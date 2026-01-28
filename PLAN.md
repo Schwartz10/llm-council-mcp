@@ -569,6 +569,7 @@ llm-council-mcp/
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
+├── council.config.ts     # Council model configuration
 ├── LICENSE                  # [✅ Phase 13.3]
 ├── CONTRIBUTING.md          # [✅ Phase 13.3]
 ├── CODE_OF_CONDUCT.md      # [✅ Phase 13.3]

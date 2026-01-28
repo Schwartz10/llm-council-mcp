@@ -31,9 +31,9 @@ LLM Council MCP is a local MCP server + CLI that queries a council of frontier m
 
 ## Core Components
 
-### 1) Configuration (`src/config.ts`)
-- Loads API keys and runtime settings from `.env`.
-- Defines the single source of truth for Council models via `COUNCIL_MODELS`.
+### 1) Configuration (`src/config.ts` + `council.config.ts`)
+- `src/config.ts` loads API keys and runtime settings from `.env`.
+- `council.config.ts` defines the single source of truth for Council models via `COUNCIL_MODELS`.
 - Supports per-provider fallback chains for graceful degradation.
 
 ### 2) Providers (`src/providers/`)
@@ -92,7 +92,6 @@ Required API keys:
 
 Optional:
 - `LLM_COUNCIL_DEBUG` (default: `false`)
-- `LLM_COUNCIL_TIMEOUT_MS` (default: `30000`)
 - `LLM_COUNCIL_REDACT_EMAILS` (default: `true`)
 - `LLM_COUNCIL_ATTACHMENT_*` limits
 - `LLM_COUNCIL_FALLBACK_COOLDOWN_MS` (default: `120000`)
@@ -101,9 +100,10 @@ Optional:
 
 ```
 llm-council-mcp/
+├── council.config.ts   # Council model configuration (user-editable)
 ├── src/
 │   ├── index.ts         # CLI entry point
-│   ├── config.ts        # Configuration + council model configs
+│   ├── config.ts        # Environment/runtime configuration
 │   ├── ui.ts            # Terminal UI helpers
 │   ├── providers/       # Provider abstraction layer
 │   ├── council/         # Parallel querying module

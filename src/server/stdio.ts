@@ -6,7 +6,7 @@
  * the server as a subprocess and communicate via stdin/stdout.
  *
  * Usage:
- *   node dist/server/stdio.js
+ *   node dist/src/server/stdio.js
  *
  * The server reads JSON-RPC messages from stdin and writes responses to stdout.
  * All logging is written to stderr to avoid polluting the JSON-RPC stream.

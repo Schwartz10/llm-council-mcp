@@ -56,7 +56,6 @@ GROQ_API_KEY=gsk_...
 # Optional Configuration
 PORT=3000                        # Server port (default: 3000)
 LLM_COUNCIL_DEBUG=false         # Enable debug logging
-LLM_COUNCIL_TIMEOUT_MS=30000    # Request timeout for providers
 RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
 RATE_LIMIT_MAX_REQUESTS=100      # Max requests per window
 LLM_COUNCIL_REDACT_EMAILS=true
@@ -239,7 +238,6 @@ Ready to receive Council consultation requests.
 ### Models failing
 - Verify API keys are correct in `.env`
 - Check API key permissions and quota limits
-- Try increasing timeout: `LLM_COUNCIL_TIMEOUT_MS=60000`
 - Test individual providers: `npm run test:providers`
 
 ### MCP requests failing

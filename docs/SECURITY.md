@@ -216,7 +216,6 @@ RATE_LIMIT_MAX_REQUESTS=100          # Max requests per window (default)
 
 # Server Configuration
 PORT=3000                             # Server port
-LLM_COUNCIL_TIMEOUT_MS=30000        # Query timeout
 LLM_COUNCIL_DEBUG=false             # Debug logging
 ```
 
