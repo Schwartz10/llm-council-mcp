@@ -55,10 +55,10 @@ This repo includes a Codex/Claude Code skill to help craft high‑signal context
 To use it in another repo:
 
 ```bash
-cp -r /path/to/llm-council-mcp/.agents/skills/second-brain-context ./.agents/skills/
+cp -r /path/to/llm-council-mcp/.agents/skills/llm-council-context ./.agents/skills/
 ```
 
-See `.agents/skills/second-brain-context/SKILL.md` for details.
+See `.agents/skills/llm-council-context/SKILL.md` for details.
 
 ## Use the CLI
 
@@ -69,20 +69,10 @@ llm-council ask "What is the best way to handle errors in TypeScript?"
 Claude Code integration:
 - See `docs/MCP_SETUP.md` for MCP setup steps.
 
-## Configuration
+## More Docs
 
-Environment variables (`.env` file):
-
-```bash
-PORT=3000
-LLM_COUNCIL_DEBUG=false
-LLM_COUNCIL_REDACT_EMAILS=true
-LLM_COUNCIL_ATTACHMENT_MAX_BYTES=5000000
-LLM_COUNCIL_ATTACHMENT_MAX_TOTAL_BYTES=20000000
-LLM_COUNCIL_ATTACHMENT_MAX_COUNT=5
-LLM_COUNCIL_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
-LLM_COUNCIL_ATTACHMENT_ALLOW_URLS=false
-LLM_COUNCIL_FALLBACK_COOLDOWN_MS=120000
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
-```
+- Configuration: `docs/CONFIGURATION.md`
+- CLI reference: `docs/CLI.md`
+- MCP client setup: `docs/MCP_SETUP.md`
+- Server operations: `docs/SERVER.md`
+- Security: `docs/SECURITY.md`

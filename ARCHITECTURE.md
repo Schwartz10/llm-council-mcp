@@ -81,20 +81,9 @@ User → CLI → /mcp (tools/call) → consult_llm_council
 - **Purpose:** List available model display names + IDs.
 - **Outputs:** `models[]` with `name` and `model_id`.
 
-## Environment Variables
+## Configuration
 
-Required API keys:
-- `ANTHROPIC_API_KEY`
-- `OPENAI_API_KEY`
-- `GEMINI_API_KEY`
-- `XAI_API_KEY`
-- `GROQ_API_KEY`
-
-Optional:
-- `LLM_COUNCIL_DEBUG` (default: `false`)
-- `LLM_COUNCIL_REDACT_EMAILS` (default: `true`)
-- `LLM_COUNCIL_ATTACHMENT_*` limits
-- `LLM_COUNCIL_FALLBACK_COOLDOWN_MS` (default: `120000`)
+See `docs/CONFIGURATION.md` for environment variables and model selection (`council.config.ts`).
 
 ## Repository Structure
 
@@ -109,8 +98,10 @@ llm-council-mcp/
 │   ├── council/         # Parallel querying module
 │   └── server/          # Express server with MCP integration
 ├── docs/
-│   ├── SERVER.md        # Server setup guide
-│   ├── MCP_SETUP.md     # Claude Code integration guide
+│   ├── CONFIGURATION.md # Configuration reference
+│   ├── CLI.md           # CLI usage
+│   ├── MCP_SETUP.md     # MCP client setup
+│   ├── SERVER.md        # Server operations
 │   └── SECURITY.md      # Security documentation
 ├── dist/                # Compiled JavaScript (after build)
 ├── package.json
