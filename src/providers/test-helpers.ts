@@ -9,7 +9,7 @@ export const TEST_MODELS = {
   openai: 'gpt-4o-mini', // Mini is cheapest
   xai: 'grok-3-beta', // Only one model available
   groq: 'llama-3.3-70b-versatile', // Fast and cheap via Groq
-  gemini: '', // Empty string for now (no API key configured)
+  gemini: 'gemini-2.5-pro', // Gemini 2.5 Pro
 };
 
 /**

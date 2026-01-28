@@ -1,4 +1,5 @@
-import { COUNCIL_MODELS, loadConfig } from '../config.js';
+import { loadConfig } from '../config.js';
+import { COUNCIL_MODELS } from '../../council.config.js';
 import { AnthropicProvider } from './anthropic/index.js';
 import { GeminiProvider } from './gemini/index.js';
 import { GroqProvider } from './groq/index.js';

@@ -10,7 +10,8 @@ import { z } from 'zod';
 import { Council } from '../council/index.js';
 import { Provider } from '../providers/types.js';
 import { createCouncilProviders } from '../providers/index.js';
-import { COUNCIL_MODELS, loadConfig } from '../config.js';
+import { loadConfig } from '../config.js';
+import { COUNCIL_MODELS } from '../../council.config.js';
 import { CouncilRequest, CouncilResponse, ModelCritique } from './types.js';
 import { normalizeAttachments } from './attachments.js';
 import { sanitizeCouncilRequest, sanitizeCouncilResponse } from './sanitize.js';
@@ -91,6 +92,15 @@ export function selectCouncilProviders(
   for (const rawModel of requestedModels) {
     const normalized = normalizeModelName(rawModel);
     if (!normalized) {
+      continue;
+    }
+
+    const directProvider = providersByName.get(normalized);
+    if (directProvider) {
+      if (!seen.has(directProvider.name)) {
+        selected.push(directProvider);
+        seen.add(directProvider.name);
+      }
       continue;
     }
 

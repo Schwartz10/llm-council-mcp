@@ -569,6 +569,7 @@ llm-council-mcp/
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
+├── council.config.ts     # Council model configuration
 ├── LICENSE                  # [✅ Phase 13.3]
 ├── CONTRIBUTING.md          # [✅ Phase 13.3]
 ├── CODE_OF_CONDUCT.md      # [✅ Phase 13.3]
@@ -615,8 +616,10 @@ llm-council-mcp/
 │   │   └── feature_request.md
 │   └── PULL_REQUEST_TEMPLATE.md
 ├── docs/
-│   ├── SERVER.md           # Server setup and usage
-│   ├── MCP_SETUP.md        # [Phase 12] Document models parameter
+│   ├── CONFIGURATION.md    # Configuration reference
+│   ├── CLI.md              # CLI usage
+│   ├── SERVER.md           # Server operations
+│   ├── MCP_SETUP.md        # MCP client setup
 │   ├── SECURITY.md         # Security documentation
 │   └── ARCHITECTURE.md     # Technical specifications
 └── README.md               # [Phase 13.1, 13.2] Update opening + skill docs

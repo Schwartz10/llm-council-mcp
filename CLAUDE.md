@@ -55,15 +55,15 @@ User → CLI → Council (models in parallel) → Structured results → User
 
 ## Code Architecture
 
-### Configuration (`src/config.ts`)
-Single source of truth for all configurations - both environment variables and council model definitions.
+### Configuration (`src/config.ts` + `council.config.ts`)
+Configuration is split between environment/runtime settings and council model definitions.
 
 **Environment Config:**
 - Loads API keys from .env file
 - Optional timeout and debug settings
 - Graceful handling of missing API keys
 
-**Model Config (`COUNCIL_MODELS` array):**
+**Model Config (`COUNCIL_MODELS` array in `council.config.ts`):**
 ```typescript
 interface ModelConfig {
   name: string;           // Display name (e.g., "GPT")
@@ -141,7 +141,6 @@ Required API keys (see `.env.example`):
 
 Optional:
 - `LLM_COUNCIL_DEBUG` (default: `false`) - Enable debug logging
-- `LLM_COUNCIL_TIMEOUT_MS` (default: `30000`) - Provider request timeout
 
 ## Working with PLAN.md
 

@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 
 import { Command } from 'commander';
-import { getMissingApiKeys, COUNCIL_MODELS, ModelConfig } from './config.js';
+import { getMissingApiKeys } from './config.js';
+import { COUNCIL_MODELS, ModelConfig } from '../council.config.js';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI } from '@ai-sdk/openai';
@@ -47,7 +48,7 @@ program
   .action(async () => {
     console.log(chalk.cyan('\n🚀 Starting Council daemon server...\n'));
     const { spawn } = await import('child_process');
-    const serverProcess = spawn('node', ['dist/server/index.js'], {
+    const serverProcess = spawn('node', ['dist/src/server/index.js'], {
       stdio: 'inherit',
     });
 
@@ -126,7 +127,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
       if (axios.isAxiosError(error) && error.code === 'ECONNREFUSED') {
         showError('Council server is not running.');
         console.log(chalk.yellow('Start the server with: llm-council server'));
-        console.log(chalk.gray('Or run: node dist/server/index.js\n'));
+        console.log(chalk.gray('Or run: node dist/src/server/index.js\n'));
       } else {
         showError(`Server error: ${error instanceof Error ? error.message : String(error)}`);
       }
