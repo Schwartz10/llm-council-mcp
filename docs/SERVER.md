@@ -56,6 +56,17 @@ GROQ_API_KEY=gsk_...
 # Optional Configuration
 PORT=3000                        # Server port (default: 3000)
 SECOND_BRAIN_DEBUG=false         # Enable debug logging
+SECOND_BRAIN_TIMEOUT_MS=30000    # Request timeout for providers
+RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100      # Max requests per window
+BRAIN_MODEL=anthropic/claude-sonnet-4-5-20250929
+SECOND_BRAIN_REDACT_EMAILS=true
+SECOND_BRAIN_ATTACHMENT_MAX_BYTES=5000000
+SECOND_BRAIN_ATTACHMENT_MAX_TOTAL_BYTES=20000000
+SECOND_BRAIN_ATTACHMENT_MAX_COUNT=5
+SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
+SECOND_BRAIN_ATTACHMENT_ALLOW_URLS=false
+SECOND_BRAIN_FALLBACK_COOLDOWN_MS=120000
 ```
 
 You need at least one API key configured. The Council will work with whatever models have valid API keys.
@@ -123,7 +134,7 @@ curl -X POST http://localhost:3000/mcp \
     "id": 1,
     "method": "tools/call",
     "params": {
-      "name": "phone_council",
+      "name": "consult_second_brain",
       "arguments": {
         "prompt": "What is TypeScript?",
         "context": "I am learning web development"

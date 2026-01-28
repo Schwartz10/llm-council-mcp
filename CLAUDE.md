@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "Second Brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to frontier models deliberating in parallel, then synthesizes a unified response.
+This is "second brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to frontier models deliberating in parallel, then synthesizes a unified response.
 
-**Goal:** Prove Second Brain answers are preferred >60% of the time vs best single model.
+**Goal:** Prove second brain answers are preferred >60% of the time vs best single model.
 
 **Current Status:** Phase 11.2 Complete (Council daemon with structured synthesis and MCP tool improvements)
 
@@ -27,7 +27,7 @@ npx tsx src/index.ts
 # Test provider connectivity
 npx tsx src/index.ts --test-providers
 
-# Ask a question through Second Brain
+# Ask a question through second brain
 second-brain ask "your question here"
 
 # Evaluation commands (Phase 7)
@@ -196,13 +196,13 @@ To be implemented with Commander.js + ora spinners for:
 - `src/cli/ui.ts` - Terminal UI helpers
 
 ### Evaluation Module (`src/eval/`) - Phase 8 ⏳
-**Purpose:** Validate that Second Brain > single model
+**Purpose:** Validate that second brain > single model
 
 **Method:**
 1. 20 hard test questions (reasoning, analysis, coding)
-2. For each: get Second Brain answer + individual model answers
+2. For each: get second brain answer + individual model answers
 3. Blind A/B comparison for human evaluation
-4. Track preference rate (target: >60% for Second Brain)
+4. Track preference rate (target: >60% for second brain)
 
 This module is separate from production code and used only for validation.
 
@@ -277,7 +277,7 @@ Phases 1-6 are the MVP. Phases 7-8 add extensibility and validation.
 
 ### Error Handling
 - API failures must be graceful
-- If 1-2 Second Brain models fail, continue with remaining models
+- If 1-2 second brain models fail, continue with remaining models
 - Never crash the CLI due to a single provider error
 
 ### Extensibility Points
@@ -293,7 +293,7 @@ Consulting Claude... ✓
 Consulting GPT... ✓
 Consulting Grok... ✓
 Consulting Llama... ✓
-Second Brain is synthesizing...
+second brain is synthesizing...
 ```
 
 ### Use Vercel AI SDK

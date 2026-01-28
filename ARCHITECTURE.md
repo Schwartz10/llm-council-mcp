@@ -1,8 +1,8 @@
-# Second Brain - Technical Architecture Specification
+# second brain - Technical Architecture Specification
 
 ## Overview
 
-Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
+second brain is a CLI tool that demonstrates multi-model AI deliberation. It uses a "Personal Brain" (orchestrator) that coordinates a "Council" of frontier AI models deliberating in parallel, then synthesizes their responses into a unified answer.
 
 **Status:** Phase 12 Complete - Subset council selection for MCP tool requests
 
@@ -10,8 +10,7 @@ Second Brain is a CLI tool that demonstrates multi-model AI deliberation. It use
 
 ## MCP Tooling (Phase 12)
 
-- Preferred tool name: `phone_council`
-- Deprecated alias: `council_consult`
+- Preferred tool name: `consult_second_brain`
 - New discovery tool: `list_models` to enumerate available Council model names
 - New input flag: `show_raw?: boolean` to omit synthesis fields
 - New input flag: `models?: string[]` to query a subset of Council models
@@ -365,13 +364,13 @@ Provider Factory:
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                         CLI ARCHITECTURE                                │
 │                                                                         │
-│  User-Facing Interface for Second Brain                                │
+│  User-Facing Interface for second brain                                │
 │                                                                         │
 │  ┌───────────────────────────────────────────────────────────────┐     │
 │  │                    Commands                                   │     │
 │  │                                                               │     │
 │  │  $ second-brain ask "<question>"                              │     │
-│  │    → Full Second Brain deliberation flow                      │     │
+│  │    → Full second brain deliberation flow                      │     │
 │  │    → Real-time progress indicators                            │     │
 │  │    → Formatted response with confidence                       │     │
 │  │                                                               │     │
@@ -805,7 +804,7 @@ Development:
 
 ## Next Steps (Phase 7+)
 
-**MVP Complete!** Phases 1-6 are fully implemented. Second Brain can now:
+**MVP Complete!** Phases 1-6 are fully implemented. second brain can now:
 - Accept user questions via CLI (`second-brain ask "question"`)
 - Pre-process with Personal Brain
 - Query multiple AI models in parallel (Council)
@@ -816,10 +815,10 @@ Development:
 Remaining phases add extended features and validation:
 
 ### Phase 7: API Schema Compatibility
-Expose Second Brain through OpenAI/Anthropic-compatible APIs.
+Expose second brain through OpenAI/Anthropic-compatible APIs.
 
 ### Phase 8: Evaluation Module
-Validate that Second Brain answers are preferred >60% vs single models.
+Validate that second brain answers are preferred >60% vs single models.
 
 ---
 
