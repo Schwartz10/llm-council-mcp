@@ -15,7 +15,6 @@ export interface Config {
   groqApiKey?: string;
   timeoutMs: number;
   debug: boolean;
-  brainModel: string;
   redactEmails: boolean;
   attachmentMaxBytes: number;
   attachmentMaxTotalBytes: number;
@@ -83,7 +82,7 @@ export function getMissingApiKeys(): string[] {
  * API keys are optional - missing keys will result in those providers being unavailable
  */
 export function loadConfig(): Config {
-  const mediaTypesRaw = getEnvVar('SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES');
+  const mediaTypesRaw = getEnvVar('LLM_COUNCIL_ATTACHMENT_ALLOWED_MEDIA_TYPES');
   const attachmentAllowedMediaTypes =
     mediaTypesRaw
       ?.split(',')
@@ -96,16 +95,15 @@ export function loadConfig(): Config {
     geminiApiKey: getEnvVar('GEMINI_API_KEY'),
     xaiApiKey: getEnvVar('XAI_API_KEY'),
     groqApiKey: getEnvVar('GROQ_API_KEY'),
-    timeoutMs: getEnvInt('SECOND_BRAIN_TIMEOUT_MS', 30000),
-    debug: process.env.SECOND_BRAIN_DEBUG === 'true',
-    brainModel: getEnvVar('BRAIN_MODEL') || 'anthropic/claude-sonnet-4-5-20250929',
-    redactEmails: process.env.SECOND_BRAIN_REDACT_EMAILS !== 'false',
-    attachmentMaxBytes: getEnvInt('SECOND_BRAIN_ATTACHMENT_MAX_BYTES', 5_000_000),
-    attachmentMaxTotalBytes: getEnvInt('SECOND_BRAIN_ATTACHMENT_MAX_TOTAL_BYTES', 20_000_000),
-    attachmentMaxCount: getEnvInt('SECOND_BRAIN_ATTACHMENT_MAX_COUNT', 5),
+    timeoutMs: getEnvInt('LLM_COUNCIL_TIMEOUT_MS', 30000),
+    debug: process.env.LLM_COUNCIL_DEBUG === 'true',
+    redactEmails: process.env.LLM_COUNCIL_REDACT_EMAILS !== 'false',
+    attachmentMaxBytes: getEnvInt('LLM_COUNCIL_ATTACHMENT_MAX_BYTES', 5_000_000),
+    attachmentMaxTotalBytes: getEnvInt('LLM_COUNCIL_ATTACHMENT_MAX_TOTAL_BYTES', 20_000_000),
+    attachmentMaxCount: getEnvInt('LLM_COUNCIL_ATTACHMENT_MAX_COUNT', 5),
     attachmentAllowedMediaTypes,
-    attachmentAllowUrls: process.env.SECOND_BRAIN_ATTACHMENT_ALLOW_URLS === 'true',
-    fallbackCooldownMs: getEnvInt('SECOND_BRAIN_FALLBACK_COOLDOWN_MS', 120000),
+    attachmentAllowUrls: process.env.LLM_COUNCIL_ATTACHMENT_ALLOW_URLS === 'true',
+    fallbackCooldownMs: getEnvInt('LLM_COUNCIL_FALLBACK_COOLDOWN_MS', 120000),
   };
 }
 
@@ -166,22 +164,3 @@ export const COUNCIL_MODELS: ModelConfig[] = [
     ],
   },
 ];
-
-/**
- * Personal Brain model configuration
- * The Personal Brain orchestrates the entire flow:
- * - Pre-processes user queries before sending to Council
- * - Post-processes consensus results for final user presentation
- *
- * Default: Claude Sonnet 4.5 (best performing, cost not a concern for MVP)
- * Can be overridden via BRAIN_MODEL environment variable
- */
-export const BRAIN_MODEL_CONFIG: ModelConfig = {
-  name: 'Personal Brain',
-  provider: 'anthropic',
-  apiKey: env.anthropicApiKey,
-  models: [
-    'claude-sonnet-4-5-20250929', // Primary: Latest Sonnet 4.5
-    'claude-sonnet-3-5-20241022', // Fallback: Sonnet 3.5
-  ],
-};

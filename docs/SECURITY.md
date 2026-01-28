@@ -216,8 +216,8 @@ RATE_LIMIT_MAX_REQUESTS=100          # Max requests per window (default)
 
 # Server Configuration
 PORT=3000                             # Server port
-SECOND_BRAIN_TIMEOUT_MS=30000        # Query timeout
-SECOND_BRAIN_DEBUG=false             # Debug logging
+LLM_COUNCIL_TIMEOUT_MS=30000        # Query timeout
+LLM_COUNCIL_DEBUG=false             # Debug logging
 ```
 
 ### Adjusting Rate Limits
@@ -289,7 +289,7 @@ npm run test
 3. **Rotate API keys** if compromise suspected
 4. **Review `.env` file permissions** (should be 600)
 5. **Update dependencies** if vulnerability discovered
-6. **Increase logging** temporarily: `SECOND_BRAIN_DEBUG=true`
+6. **Increase logging** temporarily: `LLM_COUNCIL_DEBUG=true`
 
 ### If Sensitive Data Leaked
 

@@ -55,18 +55,17 @@ GROQ_API_KEY=gsk_...
 
 # Optional Configuration
 PORT=3000                        # Server port (default: 3000)
-SECOND_BRAIN_DEBUG=false         # Enable debug logging
-SECOND_BRAIN_TIMEOUT_MS=30000    # Request timeout for providers
+LLM_COUNCIL_DEBUG=false         # Enable debug logging
+LLM_COUNCIL_TIMEOUT_MS=30000    # Request timeout for providers
 RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
 RATE_LIMIT_MAX_REQUESTS=100      # Max requests per window
-BRAIN_MODEL=anthropic/claude-sonnet-4-5-20250929
-SECOND_BRAIN_REDACT_EMAILS=true
-SECOND_BRAIN_ATTACHMENT_MAX_BYTES=5000000
-SECOND_BRAIN_ATTACHMENT_MAX_TOTAL_BYTES=20000000
-SECOND_BRAIN_ATTACHMENT_MAX_COUNT=5
-SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
-SECOND_BRAIN_ATTACHMENT_ALLOW_URLS=false
-SECOND_BRAIN_FALLBACK_COOLDOWN_MS=120000
+LLM_COUNCIL_REDACT_EMAILS=true
+LLM_COUNCIL_ATTACHMENT_MAX_BYTES=5000000
+LLM_COUNCIL_ATTACHMENT_MAX_TOTAL_BYTES=20000000
+LLM_COUNCIL_ATTACHMENT_MAX_COUNT=5
+LLM_COUNCIL_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
+LLM_COUNCIL_ATTACHMENT_ALLOW_URLS=false
+LLM_COUNCIL_FALLBACK_COOLDOWN_MS=120000
 ```
 
 You need at least one API key configured. The Council will work with whatever models have valid API keys.
@@ -86,7 +85,7 @@ npm run server:build
 
 ### Using CLI Command
 ```bash
-second-brain server
+llm-council server
 ```
 
 ## Server Endpoints
@@ -134,7 +133,7 @@ curl -X POST http://localhost:3000/mcp \
     "id": 1,
     "method": "tools/call",
     "params": {
-      "name": "consult_second_brain",
+      "name": "consult_llm_council",
       "arguments": {
         "prompt": "What is TypeScript?",
         "context": "I am learning web development"
@@ -210,7 +209,7 @@ Check server logs for:
 - Startup messages showing which models initialized
 - Request/response timing
 - Model failures and errors
-- Debug information (if `SECOND_BRAIN_DEBUG=true`)
+- Debug information (if `LLM_COUNCIL_DEBUG=true`)
 
 Example startup output:
 ```
@@ -240,7 +239,7 @@ Ready to receive Council consultation requests.
 ### Models failing
 - Verify API keys are correct in `.env`
 - Check API key permissions and quota limits
-- Try increasing timeout: `SECOND_BRAIN_TIMEOUT_MS=60000`
+- Try increasing timeout: `LLM_COUNCIL_TIMEOUT_MS=60000`
 - Test individual providers: `npm run test:providers`
 
 ### MCP requests failing
@@ -251,5 +250,5 @@ Ready to receive Council consultation requests.
 ## Next Steps
 
 - See [MCP_SETUP.md](./MCP_SETUP.md) for Claude Code integration
-- Run the CLI: `second-brain ask "your question"`
+- Run the CLI: `llm-council ask "your question"`
 - Check the main [README.md](../README.md) for usage examples

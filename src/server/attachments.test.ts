@@ -9,15 +9,15 @@ async function loadModule() {
 
 describe('Attachment normalization', () => {
   afterEach(() => {
-    delete process.env.SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES;
-    delete process.env.SECOND_BRAIN_ATTACHMENT_ALLOW_URLS;
-    delete process.env.SECOND_BRAIN_ATTACHMENT_MAX_BYTES;
-    delete process.env.SECOND_BRAIN_ATTACHMENT_MAX_COUNT;
+    delete process.env.LLM_COUNCIL_ATTACHMENT_ALLOWED_MEDIA_TYPES;
+    delete process.env.LLM_COUNCIL_ATTACHMENT_ALLOW_URLS;
+    delete process.env.LLM_COUNCIL_ATTACHMENT_MAX_BYTES;
+    delete process.env.LLM_COUNCIL_ATTACHMENT_MAX_COUNT;
   });
 
   test('accepts allowed media types with base64 data', async () => {
     vi.resetModules();
-    delete process.env.SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES;
+    delete process.env.LLM_COUNCIL_ATTACHMENT_ALLOWED_MEDIA_TYPES;
 
     const { normalizeAttachments } = await loadModule();
     const result = normalizeAttachments([
@@ -34,7 +34,7 @@ describe('Attachment normalization', () => {
 
   test('rejects attachment URLs when disabled', async () => {
     vi.resetModules();
-    delete process.env.SECOND_BRAIN_ATTACHMENT_ALLOW_URLS;
+    delete process.env.LLM_COUNCIL_ATTACHMENT_ALLOW_URLS;
 
     const { normalizeAttachments } = await loadModule();
 
@@ -50,7 +50,7 @@ describe('Attachment normalization', () => {
 
   test('enforces attachment size limits', async () => {
     vi.resetModules();
-    process.env.SECOND_BRAIN_ATTACHMENT_MAX_BYTES = '4';
+    process.env.LLM_COUNCIL_ATTACHMENT_MAX_BYTES = '4';
 
     const { normalizeAttachments } = await loadModule();
 
@@ -66,7 +66,7 @@ describe('Attachment normalization', () => {
 
   test('enforces attachment count limits', async () => {
     vi.resetModules();
-    process.env.SECOND_BRAIN_ATTACHMENT_MAX_COUNT = '1';
+    process.env.LLM_COUNCIL_ATTACHMENT_MAX_COUNT = '1';
 
     const { normalizeAttachments } = await loadModule();
 

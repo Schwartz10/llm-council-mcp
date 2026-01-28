@@ -145,8 +145,8 @@ export function listCouncilModels(
   }));
 }
 
-// Zod schema for consult_second_brain tool input
-const ConsultSecondBrainInputSchema = z
+// Zod schema for consult_llm_council tool input
+const ConsultLlmCouncilInputSchema = z
   .object({
     prompt: z
       .string()
@@ -185,7 +185,7 @@ const ConsultSecondBrainInputSchema = z
   })
   .strict();
 
-type ConsultSecondBrainInput = z.infer<typeof ConsultSecondBrainInputSchema>;
+type ConsultLlmCouncilInput = z.infer<typeof ConsultLlmCouncilInputSchema>;
 
 const ListModelsInputSchema = z.object({}).strict();
 type ListModelsInput = z.infer<typeof ListModelsInputSchema>;
@@ -269,7 +269,7 @@ export async function consultCouncilWithProviders(
 
 export async function consultCouncil(request: CouncilRequest): Promise<CouncilResponse> {
   if (!councilInitialized || councilProviders.length === 0) {
-    throw new Error('second brain not initialized. Please wait for server startup.');
+    throw new Error('LLM Council not initialized. Please wait for server startup.');
   }
 
   const selectedProviders = selectCouncilProviders(request.models, councilProviders);
@@ -279,7 +279,7 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
 
 // Create shared MCP server instance
 export const mcpServer = new McpServer({
-  name: 'second-brain-mcp-server',
+  name: 'llm-council-mcp-server',
   version: '1.0.0',
 });
 
@@ -288,12 +288,12 @@ export const mcpServer = new McpServer({
  */
 export function registerMcpTools(): void {
   mcpServer.registerTool(
-    'consult_second_brain',
+    'consult_llm_council',
     {
-      title: 'Consult second brain',
-      description: `Consult second brain for alternative perspectives, critiques, and suggestions from multiple frontier AI models.
+      title: 'Consult LLM Council',
+      description: `Consult the LLM Council for alternative perspectives, critiques, and suggestions from multiple frontier AI models.
 
-second brain queries a Council of models in parallel and returns independent responses plus structured synthesis data.
+The LLM Council MCP server queries a Council of models in parallel and returns independent responses plus structured synthesis data.
 
 The Council consists of:
 - Claude Sonnet 4.5 (Anthropic)
@@ -341,7 +341,7 @@ Returns:
   }
 
 Examples:
-  - Use when: You're stuck debugging a complex issue -> consult Second Brain for alternative approaches
+  - Use when: You're stuck debugging a complex issue -> consult the LLM Council for alternative approaches
   - Use when: You need to make an architectural decision -> get multiple perspectives
   - Use when: You're uncertain about code correctness -> get critiques from different models
   - Use when: You want to limit cost/speed -> specify a subset with models
@@ -349,8 +349,8 @@ Examples:
 Error Handling:
   - Individual model failures are captured in the "error" field
   - The Council continues even if some models fail (partial results returned)
-  - Returns error if second brain is not initialized`,
-      inputSchema: ConsultSecondBrainInputSchema,
+  - Returns error if LLM Council is not initialized`,
+      inputSchema: ConsultLlmCouncilInputSchema,
       annotations: {
         readOnlyHint: false, // Council queries external models
         destructiveHint: false, // No destructive operations
@@ -358,7 +358,7 @@ Error Handling:
         openWorldHint: true, // Interacts with external AI services
       },
     },
-    async (params: ConsultSecondBrainInput, extra) => {
+    async (params: ConsultLlmCouncilInput, extra) => {
       try {
         const result = await consultCouncil({
           prompt: params.prompt,
@@ -371,7 +371,7 @@ Error Handling:
 
         // Format as both text (markdown) and structured data
         const lines = [
-          '# second brain Consultation Results',
+          '# LLM Council Consultation Results',
           '',
           `**Models Responded:** ${result.summary.models_responded}/${result.summary.models_consulted}`,
           `**Total Time:** ${(result.summary.total_latency_ms / 1000).toFixed(1)}s`,
@@ -426,10 +426,10 @@ Error Handling:
   mcpServer.registerTool(
     'list_models',
     {
-      title: 'List second brain Models',
-      description: `List the currently available second brain models by name.
+      title: 'List LLM Council Models',
+      description: `List the currently available LLM Council models by name.
 
-Use this tool to discover the exact model names that can be passed to consult_second_brain.
+Use this tool to discover the exact model names that can be passed to consult_llm_council.
 
 Returns:
   JSON object with schema:
@@ -451,7 +451,7 @@ Returns:
     },
     (_params: ListModelsInput) => {
       if (!councilInitialized || councilProviders.length === 0) {
-        throw new Error('second brain not initialized. Please wait for server startup.');
+        throw new Error('LLM Council not initialized. Please wait for server startup.');
       }
 
       const models = listCouncilModels(councilProviders);

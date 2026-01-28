@@ -1,6 +1,6 @@
-# Second Brain Context Skill
+# LLM Council Context Skill
 
-This skill helps agents craft concise, high‑signal context for `consult_second_brain` requests.
+This skill helps agents craft concise, high‑signal context for `consult_llm_council` requests.
 
 Highlights:
 - Structured context briefs (goal, constraints, facts, avoid)

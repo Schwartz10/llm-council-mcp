@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for contributing to Second Brain!
+Thanks for contributing to LLM Council MCP!
 
 ## Quick Start
 
