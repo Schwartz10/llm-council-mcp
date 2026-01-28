@@ -1,12 +1,12 @@
-# second brain - Council Daemon for AI Agents
+# LLM Council MCP - Council Daemon for AI Agents
 
-When an AI agent gets stuck, it should be able to consult a few expert models. second brain makes that real: it runs a local MCP server that queries a council of frontier models in parallel and returns independent critiques plus structured synthesis.
+When an AI agent gets stuck, it should be able to consult a few expert models. LLM Council MCP makes that real: it runs a local MCP server that queries a council of frontier models in parallel and returns independent critiques plus structured synthesis.
 
-**Primary Use Case:** Consult second brain for AI agents (Claude Code, Codex, or custom clients) that need alternative perspectives, code reviews, or help getting unstuck.
+**Primary Use Case:** Consult the LLM Council MCP server for AI agents (Claude Code, Codex, or custom clients) that need alternative perspectives, code reviews, or help getting unstuck.
 
 ## Why This Exists
 
-AI agents are strong but brittle on complex decisions. second brain adds a fast, low‑friction way to:
+AI agents are strong but brittle on complex decisions. LLM Council MCP adds a fast, low‑friction way to:
 - Validate architectural choices before you commit
 - Catch blind spots through multi‑model critique
 - Compare solutions quickly without manual prompting
@@ -14,15 +14,15 @@ AI agents are strong but brittle on complex decisions. second brain adds a fast,
 
 ## How It Works
 
-Clients call the MCP tool `consult_second_brain`, which fans out to the configured Council models in parallel, then returns raw responses plus structured synthesis data. You can also query a subset of models or list available models for precise selection.
+Clients call the MCP tool `consult_llm_council`, which fans out to the configured Council models in parallel, then returns raw responses plus structured synthesis data. You can also query a subset of models or list available models for precise selection.
 
 ## Get Started
 
 ### 1. Download and Install
 
 ```bash
-git clone https://github.com/Schwartz10/second-brain.git
-cd second-brain
+git clone https://github.com/Schwartz10/llm-council-mcp.git
+cd llm-council-mcp
 npm install
 cp .env.example .env
 ```
@@ -50,9 +50,9 @@ The server listens on `http://localhost:3000` by default.
 
 ### 3. Install the Context Skill (Optional)
 
-The repo includes an associated Codex skill to help craft strong `consult_second_brain` context:
+The repo includes an associated Codex skill to help craft strong `consult_llm_council` context:
 
-- Skill source: `.agents/skills/second-brain-context`
+- Skill source: `.agents/skills/llm-council-context`
 
 Install by copying that folder into your Codex skills directory, or package it with your skill tooling if you prefer distributing a `.skill` file.
 
@@ -61,7 +61,7 @@ Install by copying that folder into your Codex skills directory, or package it w
 CLI:
 
 ```bash
-second-brain ask "What is the best way to handle errors in TypeScript?"
+llm-council ask "What is the best way to handle errors in TypeScript?"
 ```
 
 Claude Code integration:
@@ -75,7 +75,7 @@ To use it in another repo:
 
 ```bash
 # From your project directory
-cp -r /path/to/second-brain/.agents/skills/second-brain-context ./.agents/skills/
+cp -r /path/to/llm-council-mcp/.agents/skills/llm-council-context ./.agents/skills/
 ```
 
 What the skill provides:
@@ -83,7 +83,7 @@ What the skill provides:
 - Examples for common consultation scenarios
 - Tips to avoid context truncation
 
-See `.agents/skills/second-brain-context/SKILL.md` for details.
+See `.agents/skills/llm-council-context/SKILL.md` for details.
 
 ## Architecture
 
@@ -141,7 +141,7 @@ npm run server:build
 npm run server:stdio
 
 # Using CLI
-second-brain server
+llm-council server
 ```
 
 The server supports three transport modes:
@@ -153,10 +153,10 @@ The server supports three transport modes:
 
 ```bash
 # Consult the Council
-second-brain ask "your question here"
+llm-council ask "your question here"
 
 # With custom server URL
-second-brain ask "your question" --server http://localhost:8080
+llm-council ask "your question" --server http://localhost:8080
 
 # Test provider connectivity
 npm run test:providers
@@ -205,30 +205,27 @@ Environment variables (`.env` file):
 PORT=3000                        # Server port (default: 3000)
 
 # Debugging
-SECOND_BRAIN_DEBUG=false         # Enable debug logging
+LLM_COUNCIL_DEBUG=false         # Enable debug logging
 
 # Timeouts
-SECOND_BRAIN_TIMEOUT_MS=30000    # Request timeout for providers
+LLM_COUNCIL_TIMEOUT_MS=30000    # Request timeout for providers
 
 # Rate Limiting (server)
 RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
 RATE_LIMIT_MAX_REQUESTS=100      # Max requests per window
 
-# Personal Brain
-BRAIN_MODEL=anthropic/claude-sonnet-4-5-20250929
-
 # Output Redaction
-SECOND_BRAIN_REDACT_EMAILS=true
+LLM_COUNCIL_REDACT_EMAILS=true
 
 # Attachments
-SECOND_BRAIN_ATTACHMENT_MAX_BYTES=5000000
-SECOND_BRAIN_ATTACHMENT_MAX_TOTAL_BYTES=20000000
-SECOND_BRAIN_ATTACHMENT_MAX_COUNT=5
-SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
-SECOND_BRAIN_ATTACHMENT_ALLOW_URLS=false
+LLM_COUNCIL_ATTACHMENT_MAX_BYTES=5000000
+LLM_COUNCIL_ATTACHMENT_MAX_TOTAL_BYTES=20000000
+LLM_COUNCIL_ATTACHMENT_MAX_COUNT=5
+LLM_COUNCIL_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
+LLM_COUNCIL_ATTACHMENT_ALLOW_URLS=false
 
 # Fallbacks
-SECOND_BRAIN_FALLBACK_COOLDOWN_MS=120000
+LLM_COUNCIL_FALLBACK_COOLDOWN_MS=120000
 ```
 
 ## Development
@@ -236,7 +233,7 @@ SECOND_BRAIN_FALLBACK_COOLDOWN_MS=120000
 ### Project Structure
 
 ```
-second-brain/
+llm-council-mcp/
 ├── src/
 │   ├── index.ts         # CLI entry point
 │   ├── config.ts        # Configuration: env vars + council model configs
@@ -279,7 +276,7 @@ npx tsc --noEmit
 
 ## API Documentation
 
-### MCP Tool: consult_second_brain
+### MCP Tool: consult_llm_council
 
 Consult the Council via the Model Context Protocol.
 
@@ -352,7 +349,7 @@ List the currently available Council models by name and model id.
 - [x] Phase 7: Council Daemon Service & MCP Integration
 - [ ] Phase 8: Evaluation Module (optional)
 
-**Note:** Phases 4-6 (Personal Brain, Consensus, original CLI) were deprecated in favor of the simpler daemon service architecture.
+**Note:** Phases 4-6 (consensus and the original CLI) were deprecated in favor of the simpler daemon service architecture.
 
 ## Use Cases
 

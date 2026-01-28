@@ -26,7 +26,7 @@ function createMockProvider(name: string, modelId: string, responseText: string)
   };
 }
 
-describe('consult_second_brain response shaping', () => {
+describe('consult_llm_council response shaping', () => {
   test('omits synthesis fields when show_raw=true', async () => {
     const providers: Provider[] = [
       createMockProvider('Claude', 'claude-test', 'Use TypeScript for type safety.'),
@@ -67,7 +67,7 @@ describe('consult_second_brain response shaping', () => {
   });
 });
 
-describe('consult_second_brain model selection', () => {
+describe('consult_llm_council model selection', () => {
   test('returns all providers when models is omitted', () => {
     const providers: Provider[] = [
       createMockProvider('Claude Sonnet 4.5', 'claude-test', 'Claude'),

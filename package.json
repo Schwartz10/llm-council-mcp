@@ -1,11 +1,11 @@
 {
-  "name": "second-brain",
+  "name": "llm-council-mcp",
   "version": "1.0.0",
-  "description": "MCP council daemon for AI agents that consults multiple frontier models in parallel",
+  "description": "LLM Council MCP server for consulting multiple frontier models in parallel",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "second-brain": "./dist/index.js"
+    "llm-council": "./dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -28,7 +28,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Schwartz10/second-brain.git"
+    "url": "git+https://github.com/Schwartz10/llm-council-mcp.git"
   },
   "keywords": [
     "ai",
@@ -43,9 +43,9 @@
   "author": "Jonathan Schwartz",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/Schwartz10/second-brain/issues"
+    "url": "https://github.com/Schwartz10/llm-council-mcp/issues"
   },
-  "homepage": "https://github.com/Schwartz10/second-brain#readme",
+  "homepage": "https://github.com/Schwartz10/llm-council-mcp#readme",
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.18",
     "@ai-sdk/google": "^3.0.0",

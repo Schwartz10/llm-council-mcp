@@ -23,8 +23,8 @@ interface CliOptions {
 const program = new Command();
 
 program
-  .name('second-brain')
-  .description('Multi-model AI Council consultation CLI')
+  .name('llm-council')
+  .description('Multi-model LLM Council consultation CLI')
   .version('1.0.0');
 
 /**
@@ -88,7 +88,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
   // Validate input
   if (!question || question.trim().length === 0) {
     showError('Please provide a question to consult the Council about.');
-    console.log(chalk.gray('Example: second-brain ask "What is TypeScript?"\n'));
+    console.log(chalk.gray('Example: llm-council ask "What is TypeScript?"\n'));
     process.exit(1);
   }
 
@@ -125,7 +125,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
       healthSpinner.fail(chalk.red('Cannot connect to Council server'));
       if (axios.isAxiosError(error) && error.code === 'ECONNREFUSED') {
         showError('Council server is not running.');
-        console.log(chalk.yellow('Start the server with: second-brain server'));
+        console.log(chalk.yellow('Start the server with: llm-council server'));
         console.log(chalk.gray('Or run: node dist/server/index.js\n'));
       } else {
         showError(`Server error: ${error instanceof Error ? error.message : String(error)}`);
@@ -143,7 +143,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
         id: 1,
         method: 'tools/call',
         params: {
-          name: 'consult_second_brain',
+          name: 'consult_llm_council',
           arguments: {
             prompt: question,
           },
@@ -322,7 +322,7 @@ async function testSingleProvider(providerName: string) {
 }
 
 async function testProviders() {
-  console.log(chalk.bold('\n🧠 Testing Second Brain Provider Connectivity\n'));
+  console.log(chalk.bold('\nTesting LLM Council Provider Connectivity\n'));
 
   const missingKeys = getMissingApiKeys();
 

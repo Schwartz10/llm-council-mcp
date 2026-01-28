@@ -1,5 +1,5 @@
 /**
- * Terminal UI helpers for Second Brain CLI
+ * Terminal UI helpers for LLM Council CLI
  *
  * Provides reusable utilities for:
  * - Spinners and progress indicators
@@ -75,7 +75,7 @@ export function formatTiming(totalMs: number): string {
  * Shows a section header
  */
 export function showHeader(title: string): void {
-  console.log(`\n${chalk.bold.cyan(`🧠 ${title}`)}\n`);
+  console.log(`\n${chalk.bold.cyan(`◆ ${title}`)}\n`);
 }
 
 /**

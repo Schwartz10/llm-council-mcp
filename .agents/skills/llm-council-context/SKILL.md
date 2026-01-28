@@ -1,13 +1,13 @@
 ---
-name: second-brain-context
-description: Guidance for crafting high-quality context when using the consult_second_brain MCP tool. Use when a user wants help preparing context, summarizing files, or structuring prompts for council consultations.
+name: llm-council-context
+description: Guidance for crafting high-quality context when using the consult_llm_council MCP tool. Use when a user wants help preparing context, summarizing files, or structuring prompts for council consultations.
 ---
 
-# Second Brain Context Skill
+# LLM Council Context Skill
 
 ## Overview
 
-Provide concise, high-signal context for `consult_second_brain` requests. This skill focuses on context budgeting, structuring information, and avoiding truncation or irrelevant details.
+Provide concise, high-signal context for `consult_llm_council` requests. This skill focuses on context budgeting, structuring information, and avoiding truncation or irrelevant details.
 
 ## Core Guidance
 
@@ -18,11 +18,11 @@ Provide concise, high-signal context for `consult_second_brain` requests. This s
 
 ## Model Selection Flow
 
-If the user requests a specific model (e.g., "use Claude" or "use Anthropic"), translate that intent into the `models` array for `consult_second_brain`.
+If the user requests a specific model (e.g., "use Claude" or "use Anthropic"), translate that intent into the `models` array for `consult_llm_council`.
 
 When model names are uncertain, use this flow:
 1. Call `list_models` to retrieve the exact available model names.
-2. Pass one or more returned names to `consult_second_brain` via the `models` parameter.
+2. Pass one or more returned names to `consult_llm_council` via the `models` parameter.
 
 This avoids guessing and ensures the server accepts the model selection.
 

@@ -9,7 +9,7 @@ The Model Context Protocol (MCP) is a standard way for AI assistants like Claude
 - Consult multiple AI models when uncertain
 - Get alternative perspectives on complex problems
 - Receive critiques of proposed solutions
-- Consult second brain when stuck on difficult tasks
+- Consult the LLM Council when stuck on difficult tasks
 
 ## Prerequisites
 
@@ -56,9 +56,9 @@ stdio transport spawns the server as a subprocess and communicates via stdin/std
 ```json
 {
   "mcpServers": {
-    "second-brain": {
+    "llm-council": {
       "command": "node",
-      "args": ["/path/to/second-brain/dist/server/stdio.js"],
+      "args": ["/path/to/llm-council-mcp/dist/server/stdio.js"],
       "description": "Consult frontier AI models for alternative perspectives"
     }
   }
@@ -72,7 +72,7 @@ HTTP transport connects to a running server instance.
 ```json
 {
   "mcpServers": {
-    "second-brain": {
+    "llm-council": {
       "url": "http://127.0.0.1:3000/mcp",
       "transport": "streamable-http",
       "description": "Consult frontier AI models for alternative perspectives"
@@ -88,7 +88,7 @@ For older MCP clients (2024-11-05 spec), the server also supports Server-Sent Ev
 ```json
 {
   "mcpServers": {
-    "second-brain": {
+    "llm-council": {
       "url": "http://127.0.0.1:3000/mcp",
       "transport": "sse",
       "description": "Consult frontier AI models (SSE transport - deprecated)"
@@ -109,7 +109,7 @@ In Claude Code, try using the Council:
 Can you consult the Council about: "What is the best way to implement authentication in a Node.js app?"
 ```
 
-Claude Code should automatically invoke the `consult_second_brain` tool and present you with responses from all configured models.
+Claude Code should automatically invoke the `consult_llm_council` tool and present you with responses from all configured models.
 
 ## Using the Council in Claude Code
 
@@ -149,7 +149,7 @@ Claude: "Let me consult the Council for different debugging approaches..."
 ## Tool Details
 
 ### Tool Name
-`consult_second_brain`
+`consult_llm_council`
 
 ### Tool Parameters
 
@@ -221,9 +221,9 @@ The tool returns structured data with:
 }
 ```
 
-### Example Call Flow (list_models → consult_second_brain)
+### Example Call Flow (list_models → consult_llm_council)
 
-Use `list_models` to discover available model names, then pass one or more names to `consult_second_brain`:
+Use `list_models` to discover available model names, then pass one or more names to `consult_llm_council`:
 
 ```json
 // 1) Discover model names
@@ -232,11 +232,11 @@ Use `list_models` to discover available model names, then pass one or more names
   "params": { "name": "list_models", "arguments": {} }
 }
 
-// 2) Use a returned name in consult_second_brain
+// 2) Use a returned name in consult_llm_council
 {
   "method": "tools/call",
   "params": {
-    "name": "consult_second_brain",
+    "name": "consult_llm_council",
     "arguments": {
       "prompt": "Review this code for edge cases",
       "models": ["Claude Sonnet 4.5"]
@@ -275,7 +275,7 @@ If your Council server runs on a different port:
 ```json
 {
   "mcpServers": {
-    "second-brain": {
+    "llm-council": {
       "url": "http://127.0.0.1:8080/mcp",
       "transport": "streamable-http"
     }
@@ -290,13 +290,13 @@ You can run multiple Council servers with different configurations:
 ```json
 {
   "mcpServers": {
-    "second-brain-fast": {
+    "llm-council-fast": {
       "url": "http://127.0.0.1:3000/mcp",
-      "description": "Fast second brain (30s timeout)"
+      "description": "Fast LLM Council (30s timeout)"
     },
-    "second-brain-thorough": {
+    "llm-council-thorough": {
       "url": "http://127.0.0.1:3001/mcp",
-      "description": "Thorough second brain (120s timeout)"
+      "description": "Thorough LLM Council (120s timeout)"
     }
   }
 }
@@ -327,7 +327,7 @@ You can run multiple Council servers with different configurations:
 **Cause**: Council models are taking too long to respond.
 
 **Fix**:
-1. Increase timeout: Set `SECOND_BRAIN_TIMEOUT_MS=60000` in `.env`
+1. Increase timeout: Set `LLM_COUNCIL_TIMEOUT_MS=60000` in `.env`
 2. Restart the server
 3. Check your internet connection
 4. Verify API keys are valid
@@ -368,7 +368,7 @@ You can run multiple Council servers with different configurations:
 
 - Review the [SERVER.md](./SERVER.md) for server configuration options
 - Check the main [README.md](../README.md) for CLI usage
-- Try the Council: `second-brain ask "your question"`
+- Try the Council: `llm-council ask "your question"`
 - Monitor server logs to see Council activity
 
 ## Resources

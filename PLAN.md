@@ -1,10 +1,10 @@
-# second brain Implementation Plan
+# LLM Council MCP Implementation Plan
 
 ## Overview
 
 A Council daemon service that AI agents can consult when they need help. The Council consists of frontier AI models that provide independent critiques and suggestions via MCP protocol.
 
-**Primary Use Case:** Consult second brain when an AI agent (like Claude Code) is uncertain or stuck and needs alternative perspectives, corrections, and suggestions.
+**Primary Use Case:** Consult the LLM Council MCP server when an AI agent (like Claude Code) is uncertain or stuck and needs alternative perspectives, corrections, and suggestions.
 
 **Current Status:** 🚀 **Finalizing MVP for Open Source Release**
 
@@ -79,7 +79,7 @@ Flow: Client → Council → Models (parallel) → Critiques → Client
 - HTTP Streamable transport (POST /mcp)
 - Shared Council accessible to all clients
 - Health check endpoint (GET /health)
-- `consult_second_brain` tool for MCP clients
+- `consult_llm_council` tool for MCP clients
 - Refactored CLI as HTTP client
 - Verified with Claude Code integration
 
@@ -103,12 +103,12 @@ Flow: Client → Council → Models (parallel) → Critiques → Client
 
 ### ✅ Phase 11: Council Tool Improvements
 **Task 11.1:** ✅ Removed automatic timeout, added AbortSignal support for user cancellation
-**Task 11.2:** ✅ Renamed to `consult_second_brain`, added structured synthesis data extraction, confidence scoring
+**Task 11.2:** ✅ Renamed to `consult_llm_council`, added structured synthesis data extraction, confidence scoring
 **Task 11.3:** ✅ Context sharing documentation (CONTEXT_GUIDE.md)
 
 ### 📦 Deprecated Phases
 - **Phase 4 (Consensus)** - Removed in favor of simpler client-side synthesis
-- **Phase 5 (Brain Post-processing)** - Removed in favor of raw critique responses
+- **Phase 5 (Post-processing)** - Removed in favor of raw critique responses
 - **Phase 6 (Original CLI)** - Replaced with HTTP client in Phase 7
 
 ---
@@ -134,10 +134,10 @@ Flow: Client → Council → Models (parallel) → Critiques → Client
 
 **Implementation:**
 
-Add `models` parameter to `consult_second_brain` tool:
+Add `models` parameter to `consult_llm_council` tool:
 
 ```typescript
-consult_second_brain({
+consult_llm_council({
   prompt: string,
   context?: string,
   attachments?: Attachment[],
@@ -157,16 +157,16 @@ consult_second_brain({
 
 ```typescript
 // Query all models (current default behavior)
-consult_second_brain({ prompt: "How should I handle errors?" })
+consult_llm_council({ prompt: "How should I handle errors?" })
 
 // Query only Claude and GPT
-consult_second_brain({
+consult_llm_council({
   prompt: "Review this TypeScript code",
   models: ["claude", "gpt"]
 })
 
 // Query single model
-consult_second_brain({
+consult_llm_council({
   prompt: "Quick question about React hooks",
   models: ["gpt"]
 })
@@ -197,7 +197,7 @@ Response structure remains the same, but `critiques` array only includes request
 - `docs/MCP_SETUP.md` - Document the `models` parameter with examples
 
 **Acceptance criteria:**
-- [x] `consult_second_brain` accepts optional `models` parameter
+- [x] `consult_llm_council` accepts optional `models` parameter
 - [x] Omitting `models` queries all configured models (backward compatible)
 - [x] Specifying `models: ["claude", "gpt"]` only queries those two
 - [x] Invalid model names return helpful error message
@@ -206,7 +206,7 @@ Response structure remains the same, but `critiques` array only includes request
 - [x] Documentation includes examples of subset usage
 - [x] Tests cover: all models, subset, single model, invalid model names
 - [x] `list_models` tool returns all available Council model names and ids
-- [x] `list_models` output names can be used directly in `consult_second_brain` `models`
+- [x] `list_models` output names can be used directly in `consult_llm_council` `models`
 
 **Estimated time:** 3-4 hours
 
@@ -240,13 +240,13 @@ Extra steps taken:
 **Example structure:**
 
 ```markdown
-# second brain - Council Daemon for AI Agents
+# LLM Council MCP - Council Daemon for AI Agents
 
-When Claude Code (or any AI agent) gets stuck, it can consult second brain. It can ask a council of frontier AI models that deliberate on your problem in parallel.
+When Claude Code (or any AI agent) gets stuck, it can consult the LLM Council MCP server. It can ask a council of frontier AI models that deliberate on your problem in parallel.
 
 ## Why This Exists
 
-AI agents are powerful but can get stuck, make mistakes, or lack confidence on complex decisions. second brain gives them a way to:
+AI agents are powerful but can get stuck, make mistakes, or lack confidence on complex decisions. LLM Council MCP gives them a way to:
 - Get unstuck by consulting multiple expert models
 - Validate architectural decisions before committing
 - Review code through multiple lenses simultaneously
@@ -282,7 +282,7 @@ Think of it as a "council of experts" your AI can summon on-demand.
 **Status:** Complete
 **Goal:** Document how to use the included Claude Code skill in other repositories
 
-**Current state:** Skill exists at `.agents/skills/second-brain-context/` but no instructions for using it elsewhere
+**Current state:** Skill exists at `.agents/skills/llm-council-context/` but no instructions for using it elsewhere
 
 **Add to README:**
 
@@ -296,7 +296,7 @@ This repository includes a Claude Code skill that helps craft effective context 
 1. Copy the skill to your project's skills directory:
    ```bash
    # From your project directory
-   cp -r /path/to/second-brain/.agents/skills/second-brain-context ./.agents/skills/
+   cp -r /path/to/llm-council-mcp/.agents/skills/llm-council-context ./.agents/skills/
    ```
 
 2. The skill will now be available to Claude Code when working in your project
@@ -305,7 +305,7 @@ This repository includes a Claude Code skill that helps craft effective context 
    - Guidance on crafting concise, high-signal context
    - Examples for common scenarios (code review, bug fix, architecture decisions)
    - Context budget management tips
-   - See `.agents/skills/second-brain-context/SKILL.md` for details
+   - See `.agents/skills/llm-council-context/SKILL.md` for details
 
 **What the skill does:**
 - Helps structure context using a recommended brief schema
@@ -316,7 +316,7 @@ This repository includes a Claude Code skill that helps craft effective context 
 
 **Files to modify:**
 - `README.md` - Add "Using the Context Skill in Your Projects" section
-- `.agents/skills/second-brain-context/README.md` - Create simple readme for the skill itself
+- `.agents/skills/llm-council-context/README.md` - Create simple readme for the skill itself
 
 **Acceptance criteria:**
 - [x] Clear instructions for copying skill to other repos
@@ -494,7 +494,7 @@ After completing Phases 12-13, the MVP is ready for open source release:
 - Interactive setup wizard with inquirer
 - API key prompts with validation
 - Model selection interface
-- Configuration persistence (~/.second-brain/config.json)
+- Configuration persistence (~/.llm-council/config.json)
 - Settings management TUI
 - Cloud vs local mode switcher
 
@@ -505,11 +505,11 @@ After completing Phases 12-13, the MVP is ready for open source release:
 ### Phase 17: Naming Finalization 🏷️
 
 **Status:** Complete
-**Goal:** Finalize "second brain" naming across codebase, tools, and docs
+**Goal:** Finalize "LLM Council MCP" naming across codebase, tools, and docs
 
 **Completed work:**
-- MCP tool name is `consult_second_brain`
-- Documentation and skills use "second brain" naming
+- MCP tool name is `consult_llm_council`
+- Documentation and skills use "LLM Council MCP" naming
 - Deprecated legacy naming removed
 
 ---
@@ -565,7 +565,7 @@ After completing Phases 12-13, the MVP is ready for open source release:
 ## File Structure
 
 ```
-second-brain/
+llm-council-mcp/
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
@@ -592,7 +592,7 @@ second-brain/
 │   │   ├── index.ts        # Express server with MCP
 │   │   ├── stdio.ts        # stdio transport entry point
 │   │   ├── shared.ts       # [Phase 12] Add models parameter
-│   │   ├── types.ts        # [Phase 12] Add models to PhoneCouncilRequest
+│   │   ├── types.ts        # [Phase 12] Add models to CouncilRequest
 │   │   ├── rate-limit.ts   # Rate limiting config
 │   │   ├── sanitize.ts     # Input/output sanitization
 │   │   ├── origin.ts       # Origin validation
@@ -604,7 +604,7 @@ second-brain/
 │   └── index.ts            # CLI entry point (HTTP client)
 ├── .agents/
 │   └── skills/
-│       └── second-brain-context/  # [✅ Phase 11.3] Context skill
+│       └── llm-council-context/  # [✅ Phase 11.3] Context skill
 │           ├── SKILL.md
 │           ├── README.md           # [✅ Phase 13.2]
 │           └── references/
@@ -642,7 +642,7 @@ RATE_LIMIT_WINDOW_MS=900000      # 15 minutes (default: 900000)
 RATE_LIMIT_MAX_REQUESTS=100      # Max requests per window (default: 100)
 
 # Optional
-SECOND_BRAIN_DEBUG=false         # Enable debug logging
+LLM_COUNCIL_DEBUG=false         # Enable debug logging
 ```
 
 ---
@@ -719,4 +719,4 @@ SECOND_BRAIN_DEBUG=false         # Enable debug logging
   - CLI makes HTTP requests to server
   - Claude Code connects via stdio or HTTP MCP transport
   - All use same underlying Council
-- Focus: "Phone a friend" for AI agents (especially Claude Code)
+- Focus: LLM Council MCP for AI agents (especially Claude Code)

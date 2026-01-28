@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is "second brain" - a CLI tool that demonstrates multi-model AI deliberation produces better answers than any single model. Users ask questions through a Personal Brain (Claude Sonnet 4.5), which escalates to frontier models deliberating in parallel, then synthesizes a unified response.
+LLM Council MCP is a CLI + MCP server that queries a council of frontier models in parallel and returns independent critiques plus structured synthesis.
 
-**Goal:** Prove second brain answers are preferred >60% of the time vs best single model.
+**Goal:** Provide a reliable local MCP server for multi-model consultation with clear, structured outputs.
 
-**Current Status:** Phase 11.2 Complete (Council daemon with structured synthesis and MCP tool improvements)
+**Current Status:** Council daemon with structured synthesis and MCP tool improvements.
 
 ## Documentation
 
@@ -27,19 +27,14 @@ npx tsx src/index.ts
 # Test provider connectivity
 npx tsx src/index.ts --test-providers
 
-# Ask a question through second brain
-second-brain ask "your question here"
-
-# Evaluation commands (Phase 7)
-second-brain eval run              # Run all test questions
-second-brain eval compare          # Interactive blind A/B comparison
-second-brain eval report           # Generate preference stats
+# Ask a question via the Council
+llm-council ask "your question here"
 ```
 
 ## Architecture
 
 ```
-User → CLI → Personal Brain (pre-processing) → Council (models in parallel) → Consensus Module → Personal Brain (post-processing) → User
+User → CLI → Council (models in parallel) → Structured results → User
 ```
 
 **See ARCHITECTURE.md for detailed ASCII diagrams and technical specifications.**
@@ -57,12 +52,6 @@ User → CLI → Personal Brain (pre-processing) → Council (models in parallel
 3. Gemini (Google) - with fallback to Gemini 1.5 Pro
 4. Grok 3 Beta (xAI)
 5. Llama 4 Maverick (via Groq) - `meta-llama/llama-4-maverick-17b-128e-instruct` with fallback to Llama 3.3
-
-### Personal Brain
-- Default: Claude Sonnet 4.5 (with fallback to Sonnet 3.5)
-- Configurable via `BRAIN_MODEL` environment variable
-- Must be swappable to any Provider (designed for future flexibility)
-- Handles both pre-processing (Phase 3 ✅) and post-processing (Phase 5 ⏳)
 
 ## Code Architecture
 
@@ -141,77 +130,6 @@ Orchestrates parallel querying of the Council models:
 - `src/council/index.ts` - Council class with `deliberate()` method
 - `src/council/council.test.ts` - 8 comprehensive tests (parallel execution, failures, timeouts, progress)
 
-### Consensus Module (`src/consensus/`) - Phase 4 ⏳
-Synthesizes multiple responses from Council into one unified answer:
-
-```typescript
-interface ConsensusResult {
-  synthesis: string;           // The unified answer
-  agreement: boolean;          // Did models broadly agree?
-  confidence: number;          // 0-1 confidence score
-  dissent?: string;            // Notable disagreements
-}
-```
-
-**MVP Strategy (to be implemented):** SimpleSynthesis sends all responses to Personal Brain with a synthesis prompt that:
-1. Combines insights from all models
-2. Identifies agreement vs disagreement patterns
-3. Produces confidence level based on consensus
-4. Highlights any significant dissent
-
-**Extensibility:** New strategies can be added as files in `src/consensus/strategies/`
-
-**Files to create:**
-- `src/consensus/index.ts` - consensus orchestrator
-- `src/consensus/types.ts` - ConsensusResult, ConsensusStrategy interfaces
-- `src/consensus/strategies/simple-synthesis.ts` - MVP strategy
-
-### Personal Brain (`src/brain/`)
-Two-stage processing:
-1. **Pre-processing (Phase 3 ✅):** Clarifies user questions, adds context, formats for Council
-   - Implemented via `prepareForCouncil(userQuery)` method
-   - Falls back to original query on failure
-   - Uses prompt templates from `src/brain/prompts.ts`
-
-2. **Post-processing (Phase 5 ⏳):** Takes ConsensusResult, formats final response with confidence indicators and dissent notes
-   - To be implemented via `presentToUser(consensus)` method
-
-Configurable with any Provider but defaults to Claude Sonnet 4.5.
-
-**Implementation:**
-- `src/brain/types.ts` - BrainConfig interface
-- `src/brain/prompts.ts` - Pre-processing prompt templates
-- `src/brain/index.ts` - Brain class
-- `src/brain/brain.test.ts` - 5 comprehensive tests (simple, ambiguous, complex queries, fallback)
-
-### CLI Interface (`src/cli/`) - Phase 6 ⏳
-To be implemented with Commander.js + ora spinners for:
-- Real-time progress as each model responds
-- Pretty-printed markdown responses
-- Timing information
-- Graceful Ctrl+C handling
-
-**Files to create:**
-- `src/cli/index.ts` - CLI commands
-- `src/cli/ui.ts` - Terminal UI helpers
-
-### Evaluation Module (`src/eval/`) - Phase 8 ⏳
-**Purpose:** Validate that second brain > single model
-
-**Method:**
-1. 20 hard test questions (reasoning, analysis, coding)
-2. For each: get second brain answer + individual model answers
-3. Blind A/B comparison for human evaluation
-4. Track preference rate (target: >60% for second brain)
-
-This module is separate from production code and used only for validation.
-
-**Files to create:**
-- `src/eval/index.ts` - evaluation harness
-- `src/eval/questions.ts` - test question bank
-- `src/eval/compare.ts` - comparison logic
-- `src/eval/report.ts` - generate eval report
-
 ## Environment Variables
 
 Required API keys (see `.env.example`):
@@ -222,8 +140,8 @@ Required API keys (see `.env.example`):
 - `GROQ_API_KEY` - Groq API key for Llama models
 
 Optional:
-- `BRAIN_MODEL` (default: `anthropic/claude-sonnet-4-5-20250929`) - Personal Brain model identifier
-- `SECOND_BRAIN_DEBUG` (default: `false`) - Enable debug logging
+- `LLM_COUNCIL_DEBUG` (default: `false`) - Enable debug logging
+- `LLM_COUNCIL_TIMEOUT_MS` (default: `30000`) - Provider request timeout
 
 ## Working with PLAN.md
 
@@ -256,44 +174,25 @@ Example:
 - [ ] Create config loader that validates all 5 API keys exist
 ```
 
-### Implementation Order
-Follow phases 1-8 in sequence. Each phase builds on the previous:
-
-**Completed:**
-1. ✅ Project Setup & Provider Integration (Phase 1)
-2. ✅ Provider Abstraction Layer (Phase 2)
-3. ✅ Personal Brain Pre-processing + Council Module (Phase 3)
-
-**Remaining:**
-4. ⏳ Consensus Module (Phase 4)
-5. ⏳ Personal Brain Post-processing (Phase 5)
-6. ⏳ CLI Interface (Phase 6)
-7. ⏳ API Schema Compatibility - OpenAI/Anthropic formats (Phase 7)
-8. ⏳ Evaluation Module (Phase 8)
-
-Phases 1-6 are the MVP. Phases 7-8 add extensibility and validation.
-
 ## Key Design Principles
 
 ### Error Handling
 - API failures must be graceful
-- If 1-2 second brain models fail, continue with remaining models
+- If 1-2 council models fail, continue with remaining models
 - Never crash the CLI due to a single provider error
 
 ### Extensibility Points
 1. **Consensus strategies:** Add new files to `src/consensus/strategies/`
-2. **Personal Brain model:** Configurable via any Provider implementation
-3. **New providers:** Implement the Provider interface
+2. **New providers:** Implement the Provider interface
 
 ### Progress Transparency
 The CLI should show real-time progress:
 ```
-Personal Brain is preparing your question...
 Consulting Claude... ✓
 Consulting GPT... ✓
 Consulting Grok... ✓
 Consulting Llama... ✓
-second brain is synthesizing...
+Synthesis complete.
 ```
 
 ### Use Vercel AI SDK
