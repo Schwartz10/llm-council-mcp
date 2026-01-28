@@ -143,7 +143,7 @@ async function handleAskCommand(question: string, serverUrl: string): Promise<vo
         id: 1,
         method: 'tools/call',
         params: {
-          name: 'phone_council',
+          name: 'consult_second_brain',
           arguments: {
             prompt: question,
           },

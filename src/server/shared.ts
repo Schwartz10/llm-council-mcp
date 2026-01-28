@@ -145,8 +145,8 @@ export function listCouncilModels(
   }));
 }
 
-// Zod schema for phone_council tool input
-const PhoneCouncilInputSchema = z
+// Zod schema for consult_second_brain tool input
+const ConsultSecondBrainInputSchema = z
   .object({
     prompt: z
       .string()
@@ -185,7 +185,7 @@ const PhoneCouncilInputSchema = z
   })
   .strict();
 
-type PhoneCouncilInput = z.infer<typeof PhoneCouncilInputSchema>;
+type ConsultSecondBrainInput = z.infer<typeof ConsultSecondBrainInputSchema>;
 
 const ListModelsInputSchema = z.object({}).strict();
 type ListModelsInput = z.infer<typeof ListModelsInputSchema>;
@@ -269,7 +269,7 @@ export async function consultCouncilWithProviders(
 
 export async function consultCouncil(request: CouncilRequest): Promise<CouncilResponse> {
   if (!councilInitialized || councilProviders.length === 0) {
-    throw new Error('Council not initialized. Please wait for server startup.');
+    throw new Error('second brain not initialized. Please wait for server startup.');
   }
 
   const selectedProviders = selectCouncilProviders(request.models, councilProviders);
@@ -279,7 +279,7 @@ export async function consultCouncil(request: CouncilRequest): Promise<CouncilRe
 
 // Create shared MCP server instance
 export const mcpServer = new McpServer({
-  name: 'council-mcp-server',
+  name: 'second-brain-mcp-server',
   version: '1.0.0',
 });
 
@@ -287,14 +287,13 @@ export const mcpServer = new McpServer({
  * Register all MCP tools on the shared server instance
  */
 export function registerMcpTools(): void {
-  const registerCouncilTool = (toolName: 'phone_council' | 'council_consult', deprecated = false) =>
-    mcpServer.registerTool(
-      toolName,
-      {
-        title: deprecated ? 'Consult Council (Deprecated)' : 'Phone Council',
-        description: `Consult the Council of frontier AI models for alternative perspectives, critiques, and suggestions.
+  mcpServer.registerTool(
+    'consult_second_brain',
+    {
+      title: 'Consult second brain',
+      description: `Consult second brain for alternative perspectives, critiques, and suggestions from multiple frontier AI models.
 
-This tool is designed for "Phone a Friend" scenarios - when you're uncertain or stuck, the Council provides independent critiques from multiple models to help you make better decisions.
+second brain queries a Council of models in parallel and returns independent responses plus structured synthesis data.
 
 The Council consists of:
 - Claude Sonnet 4.5 (Anthropic)
@@ -302,8 +301,6 @@ The Council consists of:
 - Gemini (Google)
 - Grok 3 Beta (xAI)
 - Llama 4 Maverick (Groq)
-
-All models are queried in parallel and provide independent responses without knowing what other models said.
 
 Args:
   - prompt (string): The question or problem you need help with
@@ -344,7 +341,7 @@ Returns:
   }
 
 Examples:
-  - Use when: You're stuck debugging a complex issue -> consult Council for alternative approaches
+  - Use when: You're stuck debugging a complex issue -> consult Second Brain for alternative approaches
   - Use when: You need to make an architectural decision -> get multiple perspectives
   - Use when: You're uncertain about code correctness -> get critiques from different models
   - Use when: You want to limit cost/speed -> specify a subset with models
@@ -352,92 +349,87 @@ Examples:
 Error Handling:
   - Individual model failures are captured in the "error" field
   - The Council continues even if some models fail (partial results returned)
-  - Returns error if Council is not initialized${
-    deprecated ? '\n\nNote: This tool name is deprecated. Prefer `phone_council`.' : ''
-  }`,
-        inputSchema: PhoneCouncilInputSchema,
-        annotations: {
-          readOnlyHint: false, // Council queries external models
-          destructiveHint: false, // No destructive operations
-          idempotentHint: false, // Different responses each time
-          openWorldHint: true, // Interacts with external AI services
-        },
+  - Returns error if second brain is not initialized`,
+      inputSchema: ConsultSecondBrainInputSchema,
+      annotations: {
+        readOnlyHint: false, // Council queries external models
+        destructiveHint: false, // No destructive operations
+        idempotentHint: false, // Different responses each time
+        openWorldHint: true, // Interacts with external AI services
       },
-      async (params: PhoneCouncilInput, extra) => {
-        try {
-          const result = await consultCouncil({
-            prompt: params.prompt,
-            context: params.context,
-            attachments: params.attachments,
-            show_raw: params.show_raw,
-            models: params.models,
-            signal: extra?.signal,
-          });
+    },
+    async (params: ConsultSecondBrainInput, extra) => {
+      try {
+        const result = await consultCouncil({
+          prompt: params.prompt,
+          context: params.context,
+          attachments: params.attachments,
+          show_raw: params.show_raw,
+          models: params.models,
+          signal: extra?.signal,
+        });
 
-          // Format as both text (markdown) and structured data
-          const lines = [
-            '# Council Consultation Results',
-            '',
-            `**Models Responded:** ${result.summary.models_responded}/${result.summary.models_consulted}`,
-            `**Total Time:** ${(result.summary.total_latency_ms / 1000).toFixed(1)}s`,
-            '',
-          ];
+        // Format as both text (markdown) and structured data
+        const lines = [
+          '# second brain Consultation Results',
+          '',
+          `**Models Responded:** ${result.summary.models_responded}/${result.summary.models_consulted}`,
+          `**Total Time:** ${(result.summary.total_latency_ms / 1000).toFixed(1)}s`,
+          '',
+        ];
 
-          for (const critique of result.critiques) {
-            if (critique.error) {
-              lines.push(`## ${critique.model} ✗`);
-              lines.push(`**Model ID:** ${critique.model_id}`);
-              lines.push(`**Error:** ${critique.error}`);
-            } else {
-              lines.push(`## ${critique.model} ✓`);
-              lines.push(`**Model ID:** ${critique.model_id}`);
-              lines.push(critique.response);
-            }
-            lines.push('');
+        for (const critique of result.critiques) {
+          if (critique.error) {
+            lines.push(`## ${critique.model} ✗`);
+            lines.push(`**Model ID:** ${critique.model_id}`);
+            lines.push(`**Error:** ${critique.error}`);
+          } else {
+            lines.push(`## ${critique.model} ✓`);
+            lines.push(`**Model ID:** ${critique.model_id}`);
+            lines.push(critique.response);
           }
-
-          if (result.synthesis_data) {
-            lines.push('## Synthesis Summary');
-            lines.push(`**Confidence:** ${Math.round(result.synthesis_data.confidence * 100)}%`);
-            if (result.synthesis_data.agreement_points.length > 0) {
-              lines.push('');
-              lines.push('**Agreement Points:**');
-              for (const point of result.synthesis_data.agreement_points) {
-                lines.push(`- ${point}`);
-              }
-            }
-            if (result.synthesis_data.disagreements.length > 0) {
-              lines.push('');
-              lines.push('**Disagreements:**');
-              for (const disagreement of result.synthesis_data.disagreements) {
-                lines.push(`- ${disagreement.topic}`);
-              }
-            }
-            lines.push('');
-          }
-
-          const textContent = lines.join('\n');
-
-          return {
-            content: [{ type: 'text', text: textContent }],
-            structuredContent: result as unknown as Record<string, unknown>, // Modern pattern for structured data
-          };
-        } catch (error) {
-          throw toMcpError(error, config.debug);
+          lines.push('');
         }
-      }
-    );
 
-  registerCouncilTool('phone_council');
-  registerCouncilTool('council_consult', true);
+        if (result.synthesis_data) {
+          lines.push('## Synthesis Summary');
+          lines.push(`**Confidence:** ${Math.round(result.synthesis_data.confidence * 100)}%`);
+          if (result.synthesis_data.agreement_points.length > 0) {
+            lines.push('');
+            lines.push('**Agreement Points:**');
+            for (const point of result.synthesis_data.agreement_points) {
+              lines.push(`- ${point}`);
+            }
+          }
+          if (result.synthesis_data.disagreements.length > 0) {
+            lines.push('');
+            lines.push('**Disagreements:**');
+            for (const disagreement of result.synthesis_data.disagreements) {
+              lines.push(`- ${disagreement.topic}`);
+            }
+          }
+          lines.push('');
+        }
+
+        const textContent = lines.join('\n');
+
+        return {
+          content: [{ type: 'text', text: textContent }],
+          structuredContent: result as unknown as Record<string, unknown>, // Modern pattern for structured data
+        };
+      } catch (error) {
+        throw toMcpError(error, config.debug);
+      }
+    }
+  );
 
   mcpServer.registerTool(
     'list_models',
     {
-      title: 'List Council Models',
-      description: `List the currently available Council models by name.
+      title: 'List second brain Models',
+      description: `List the currently available second brain models by name.
 
-Use this tool to discover the exact model names that can be passed to phone_council.
+Use this tool to discover the exact model names that can be passed to consult_second_brain.
 
 Returns:
   JSON object with schema:
@@ -459,7 +451,7 @@ Returns:
     },
     (_params: ListModelsInput) => {
       if (!councilInitialized || councilProviders.length === 0) {
-        throw new Error('Council not initialized. Please wait for server startup.');
+        throw new Error('second brain not initialized. Please wait for server startup.');
       }
 
       const models = listCouncilModels(councilProviders);

@@ -1,10 +1,10 @@
-# Second Brain Implementation Plan
+# second brain Implementation Plan
 
 ## Overview
 
 A Council daemon service that AI agents can consult when they need help. The Council consists of frontier AI models that provide independent critiques and suggestions via MCP protocol.
 
-**Primary Use Case:** "Phone a Friend" - when an AI agent (like Claude Code) is uncertain or stuck, it can consult the Council for alternative perspectives, corrections, and suggestions.
+**Primary Use Case:** Consult second brain when an AI agent (like Claude Code) is uncertain or stuck and needs alternative perspectives, corrections, and suggestions.
 
 **Current Status:** 🚀 **Finalizing MVP for Open Source Release**
 
@@ -79,7 +79,7 @@ Flow: Client → Council → Models (parallel) → Critiques → Client
 - HTTP Streamable transport (POST /mcp)
 - Shared Council accessible to all clients
 - Health check endpoint (GET /health)
-- `phone_council` tool for MCP clients (`council_consult` deprecated alias)
+- `consult_second_brain` tool for MCP clients
 - Refactored CLI as HTTP client
 - Verified with Claude Code integration
 
@@ -103,7 +103,7 @@ Flow: Client → Council → Models (parallel) → Critiques → Client
 
 ### ✅ Phase 11: Council Tool Improvements
 **Task 11.1:** ✅ Removed automatic timeout, added AbortSignal support for user cancellation
-**Task 11.2:** ✅ Renamed to `phone_council`, added structured synthesis data extraction, confidence scoring
+**Task 11.2:** ✅ Renamed to `consult_second_brain`, added structured synthesis data extraction, confidence scoring
 **Task 11.3:** ✅ Context sharing documentation (CONTEXT_GUIDE.md)
 
 ### 📦 Deprecated Phases
@@ -134,10 +134,10 @@ Flow: Client → Council → Models (parallel) → Critiques → Client
 
 **Implementation:**
 
-Add `models` parameter to `phone_council` tool:
+Add `models` parameter to `consult_second_brain` tool:
 
 ```typescript
-phone_council({
+consult_second_brain({
   prompt: string,
   context?: string,
   attachments?: Attachment[],
@@ -157,16 +157,16 @@ phone_council({
 
 ```typescript
 // Query all models (current default behavior)
-phone_council({ prompt: "How should I handle errors?" })
+consult_second_brain({ prompt: "How should I handle errors?" })
 
 // Query only Claude and GPT
-phone_council({
+consult_second_brain({
   prompt: "Review this TypeScript code",
   models: ["claude", "gpt"]
 })
 
 // Query single model
-phone_council({
+consult_second_brain({
   prompt: "Quick question about React hooks",
   models: ["gpt"]
 })
@@ -192,12 +192,12 @@ Response structure remains the same, but `critiques` array only includes request
 
 **Files to modify:**
 - `src/server/shared.ts` - Add `models` parameter to tool schema, filter council providers
-- `src/server/types.ts` - Add `models?: string[]` to PhoneCouncilRequest
+- `src/server/types.ts` - Add `models?: string[]` to CouncilRequest
 - `src/council/index.ts` - Accept subset of providers in `deliberate()` method
 - `docs/MCP_SETUP.md` - Document the `models` parameter with examples
 
 **Acceptance criteria:**
-- [x] `phone_council` accepts optional `models` parameter
+- [x] `consult_second_brain` accepts optional `models` parameter
 - [x] Omitting `models` queries all configured models (backward compatible)
 - [x] Specifying `models: ["claude", "gpt"]` only queries those two
 - [x] Invalid model names return helpful error message
@@ -206,22 +206,27 @@ Response structure remains the same, but `critiques` array only includes request
 - [x] Documentation includes examples of subset usage
 - [x] Tests cover: all models, subset, single model, invalid model names
 - [x] `list_models` tool returns all available Council model names and ids
-- [x] `list_models` output names can be used directly in `phone_council` `models`
+- [x] `list_models` output names can be used directly in `consult_second_brain` `models`
 
 **Estimated time:** 3-4 hours
+
+Extra steps taken:
+- Reviewed direct dependency licenses from installed packages (all MIT/Apache-2.0/BSD-2-Clause).
+- Verified install/build flow by running `npm run build`.
+- Swept repo for TODO/FIXME markers (none found) and confirmed console output is intentional (CLI/server logs).
 
 ---
 
 ### Phase 13: Documentation & Open Source Preparation 📚
 
-**Status:** Not started
+**Status:** In progress
 **Goal:** Polish documentation and prepare repository for public release
 
 ---
 
 #### Task 13.1: Update README.md
 
-**Status:** Not started
+**Status:** Complete
 **Goal:** Rewrite opening paragraphs to clearly communicate what this project does and why it exists
 
 **Current issue:** README starts with "A daemon service..." which is accurate but doesn't explain the *why* or the *value proposition*.
@@ -235,13 +240,13 @@ Response structure remains the same, but `critiques` array only includes request
 **Example structure:**
 
 ```markdown
-# Second Brain - Council Daemon for AI Agents
+# second brain - Council Daemon for AI Agents
 
-When Claude Code (or any AI agent) gets stuck, it can phone a friend. Actually, it can phone *four friends* - a council of frontier AI models that deliberate on your problem in parallel.
+When Claude Code (or any AI agent) gets stuck, it can consult second brain. It can ask a council of frontier AI models that deliberate on your problem in parallel.
 
 ## Why This Exists
 
-AI agents are powerful but can get stuck, make mistakes, or lack confidence on complex decisions. Second Brain gives them a way to:
+AI agents are powerful but can get stuck, make mistakes, or lack confidence on complex decisions. second brain gives them a way to:
 - Get unstuck by consulting multiple expert models
 - Validate architectural decisions before committing
 - Review code through multiple lenses simultaneously
@@ -262,11 +267,11 @@ Think of it as a "council of experts" your AI can summon on-demand.
 - `README.md` - Rewrite opening paragraphs, improve flow
 
 **Acceptance criteria:**
-- [ ] Opening clearly explains the problem being solved
-- [ ] Value proposition is obvious within first 3 paragraphs
-- [ ] Target audience is clear (AI agents, Claude Code users, developers)
-- [ ] Technical details come after the "why"
-- [ ] Installation steps remain clear and accurate
+- [x] Opening clearly explains the problem being solved
+- [x] Value proposition is obvious within first 3 paragraphs
+- [x] Target audience is clear (AI agents, Claude Code users, developers)
+- [x] Technical details come after the "why"
+- [x] Installation steps remain clear and accurate
 
 **Estimated time:** 1 hour
 
@@ -274,10 +279,10 @@ Think of it as a "council of experts" your AI can summon on-demand.
 
 #### Task 13.2: Skill Distribution Documentation
 
-**Status:** Not started
+**Status:** Complete
 **Goal:** Document how to use the included Claude Code skill in other repositories
 
-**Current state:** Skill exists at `.agents/skills/phone-council-context/` but no instructions for using it elsewhere
+**Current state:** Skill exists at `.agents/skills/second-brain-context/` but no instructions for using it elsewhere
 
 **Add to README:**
 
@@ -291,7 +296,7 @@ This repository includes a Claude Code skill that helps craft effective context 
 1. Copy the skill to your project's skills directory:
    ```bash
    # From your project directory
-   cp -r /path/to/second-brain/.agents/skills/phone-council-context ./.agents/skills/
+   cp -r /path/to/second-brain/.agents/skills/second-brain-context ./.agents/skills/
    ```
 
 2. The skill will now be available to Claude Code when working in your project
@@ -300,7 +305,7 @@ This repository includes a Claude Code skill that helps craft effective context 
    - Guidance on crafting concise, high-signal context
    - Examples for common scenarios (code review, bug fix, architecture decisions)
    - Context budget management tips
-   - See `.agents/skills/phone-council-context/SKILL.md` for details
+   - See `.agents/skills/second-brain-context/SKILL.md` for details
 
 **What the skill does:**
 - Helps structure context using a recommended brief schema
@@ -311,13 +316,13 @@ This repository includes a Claude Code skill that helps craft effective context 
 
 **Files to modify:**
 - `README.md` - Add "Using the Context Skill in Your Projects" section
-- `.agents/skills/phone-council-context/README.md` - Create simple readme for the skill itself
+- `.agents/skills/second-brain-context/README.md` - Create simple readme for the skill itself
 
 **Acceptance criteria:**
-- [ ] Clear instructions for copying skill to other repos
-- [ ] Explains what the skill does and why it's useful
-- [ ] Links to skill documentation for more details
-- [ ] Copy command is accurate and tested
+- [x] Clear instructions for copying skill to other repos
+- [x] Explains what the skill does and why it's useful
+- [x] Links to skill documentation for more details
+- [x] Copy command is accurate and tested
 
 **Estimated time:** 30 minutes
 
@@ -325,49 +330,49 @@ This repository includes a Claude Code skill that helps craft effective context 
 
 #### Task 13.3: Open Source Checklist
 
-**Status:** Not started
+**Status:** In progress
 **Goal:** Review and prepare repository for public open source release
 
 **Checklist:**
 
 **Legal & Licensing:**
-- [ ] Choose license (recommend MIT or Apache 2.0 for maximum adoption)
-- [ ] Add LICENSE file to repository root
-- [ ] Review all dependencies for license compatibility
+- [x] Choose license (recommend MIT or Apache 2.0 for maximum adoption)
+- [x] Add LICENSE file to repository root
+- [x] Review all dependencies for license compatibility
 - [ ] Ensure no proprietary or sensitive code remains
 
 **Documentation:**
-- [ ] README.md is clear and compelling ✅ (Task 13.1)
-- [ ] Installation instructions are tested and work
-- [ ] All configuration options documented
+- [x] README.md is clear and compelling ✅ (Task 13.1)
+- [x] Installation instructions are tested and work
+- [x] All configuration options documented
 - [ ] Security best practices documented ✅ (SECURITY.md exists)
 - [ ] Architecture documented ✅ (ARCHITECTURE.md exists)
 - [ ] MCP setup guide exists ✅ (MCP_SETUP.md exists)
 
 **Code Quality:**
-- [ ] Run `npx tsc --noEmit` - no TypeScript errors
-- [ ] Run `npm run lint` - no linter errors/warnings
-- [ ] Run `npm test` - all tests passing
-- [ ] Remove any debug code, console.logs, or TODOs
-- [ ] Remove any hardcoded values specific to development
+- [x] Run `npx tsc --noEmit` - no TypeScript errors
+- [x] Run `npm run lint` - no linter errors/warnings
+- [x] Run `npm test` - all tests passing
+- [x] Remove any debug code, console.logs, or TODOs
+- [x] Remove any hardcoded values specific to development
 
 **Repository Setup:**
 - [ ] Add .gitignore (ensure .env is ignored) ✅
-- [ ] Add CONTRIBUTING.md (how to contribute)
-- [ ] Add CODE_OF_CONDUCT.md (community guidelines)
+- [x] Add CONTRIBUTING.md (how to contribute)
+- [x] Add CODE_OF_CONDUCT.md (community guidelines)
 - [ ] Configure GitHub repository settings:
   - [ ] Add description and topics/tags
   - [ ] Add website URL (if applicable)
   - [ ] Enable issues
   - [ ] Enable discussions (optional)
 - [ ] Create GitHub templates:
-  - [ ] Issue template
-  - [ ] Pull request template
+  - [x] Issue template
+  - [x] Pull request template
 
 **Package Configuration:**
 - [ ] Update package.json with correct repository URL
-- [ ] Add keywords for npm discoverability
-- [ ] Set correct author and license fields
+- [x] Add keywords for npm discoverability
+- [x] Set correct author and license fields
 - [ ] Decide on npm package name and availability
 - [ ] Test installation from npm (if publishing)
 
@@ -429,7 +434,7 @@ After completing Phases 12-13, the MVP is ready for open source release:
 
 ## Post-MVP Roadmap
 
-### Phase 14: Individual Model Tool `phone_friend` 🎯
+### Phase 14: Individual Model Tool `consult_model` 🎯
 
 **Status:** Deferred (post-MVP)
 **Goal:** Add tool for consulting specific models with fuzzy matching
@@ -437,7 +442,7 @@ After completing Phases 12-13, the MVP is ready for open source release:
 **Why deferred:** Subset selection (Phase 12) covers the primary use case. Individual model tool adds complexity (fuzzy matching, "did you mean?" suggestions) that's not essential for MVP.
 
 **Future implementation:**
-- Add `phone_friend` tool with single model queries
+- Add `consult_model` tool with single model queries
 - Fuzzy matching for model names ("GPT 5 2" → "gpt-5.2")
 - Confidence scoring for ambiguous matches
 - "Did you mean?" suggestions
@@ -489,7 +494,7 @@ After completing Phases 12-13, the MVP is ready for open source release:
 - Interactive setup wizard with inquirer
 - API key prompts with validation
 - Model selection interface
-- Configuration persistence (~/.phone-council/config.json)
+- Configuration persistence (~/.second-brain/config.json)
 - Settings management TUI
 - Cloud vs local mode switcher
 
@@ -497,22 +502,15 @@ After completing Phases 12-13, the MVP is ready for open source release:
 
 ---
 
-### Phase 17: Rename to "Phone a Friend" 🏷️
+### Phase 17: Naming Finalization 🏷️
 
-**Status:** Deferred (post-MVP)
-**Goal:** Complete rename across codebase and infrastructure
+**Status:** Complete
+**Goal:** Finalize "second brain" naming across codebase, tools, and docs
 
-**Why deferred:** Renaming is disruptive and should wait until after initial adoption. Current name is functional and descriptive.
-
-**Future implementation:**
-- Package rename: `second-brain` → `@glif/phone-a-friend`
-- CLI command rename: `second-brain` → `phone-a-friend`
-- Repository rename on GitHub
-- Environment variable migration
-- Update all documentation
-- Deprecation strategy for old names
-
-**Estimated time:** 3-4 hours
+**Completed work:**
+- MCP tool name is `consult_second_brain`
+- Documentation and skills use "second brain" naming
+- Deprecated legacy naming removed
 
 ---
 
@@ -571,9 +569,9 @@ second-brain/
 ├── package.json
 ├── tsconfig.json
 ├── .env.example
-├── LICENSE                  # [Phase 13.3] To be added
-├── CONTRIBUTING.md          # [Phase 13.3] To be added
-├── CODE_OF_CONDUCT.md      # [Phase 13.3] To be added
+├── LICENSE                  # [✅ Phase 13.3]
+├── CONTRIBUTING.md          # [✅ Phase 13.3]
+├── CODE_OF_CONDUCT.md      # [✅ Phase 13.3]
 ├── src/
 │   ├── config.ts           # Environment/config loading
 │   ├── providers/          # [✅ Phase 2] Provider abstraction
@@ -606,12 +604,12 @@ second-brain/
 │   └── index.ts            # CLI entry point (HTTP client)
 ├── .agents/
 │   └── skills/
-│       └── phone-council-context/  # [✅ Phase 11.3] Context skill
+│       └── second-brain-context/  # [✅ Phase 11.3] Context skill
 │           ├── SKILL.md
-│           ├── README.md           # [Phase 13.2] To be added
+│           ├── README.md           # [✅ Phase 13.2]
 │           └── references/
 │               └── CONTEXT_GUIDE.md
-├── .github/                # [Phase 13.3] To be added
+├── .github/                # [✅ Phase 13.3]
 │   ├── ISSUE_TEMPLATE/
 │   │   ├── bug_report.md
 │   │   └── feature_request.md
@@ -693,8 +691,8 @@ SECOND_BRAIN_DEBUG=false         # Enable debug logging
 **Before marking MVP complete:**
 
 - [ ] **Phase 12:** Subset council selection works, tests pass
-- [ ] **Phase 13.1:** README opening is clear and compelling
-- [ ] **Phase 13.2:** Skill distribution documented
+- [x] **Phase 13.1:** README opening is clear and compelling
+- [x] **Phase 13.2:** Skill distribution documented
 - [ ] **Phase 13.3:** Open source checklist complete
 - [ ] **Build:** `npx tsc --noEmit` - no errors
 - [ ] **Lint:** `npm run lint` - no errors/warnings

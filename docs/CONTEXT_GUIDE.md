@@ -1,6 +1,6 @@
 # Context Sharing Guide
 
-This guide explains how to provide effective context to the `phone_council` MCP tool while staying within model limits. It includes a recommended brief schema, budget guidance, truncation examples, and scenario-specific examples.
+This guide explains how to provide effective context to the `consult_second_brain` MCP tool while staying within model limits. It includes a recommended brief schema, budget guidance, truncation examples, and scenario-specific examples.
 
 ## Goals
 
@@ -29,7 +29,7 @@ Example:
   "goal": "Review the CLI's error handling for the council tool",
   "constraints": ["Do not change public API", "Preserve existing log format"],
   "relevant_facts": [
-    "Tool name is phone_council",
+    "Tool name is consult_second_brain",
     "Response includes structured synthesis_data when show_raw=false"
   ],
   "avoid": ["Rewriting unrelated files", "Adding new dependencies"]
@@ -125,7 +125,7 @@ Give a minimal reproduction with exact error text.
 ```
 Context:
 - Error: "Attachment mediaType not allowed: image/heic"
-- Repro: Send image/heic with data URL to phone_council
+- Repro: Send image/heic with data URL to consult_second_brain
 - Config: attachmentAllowedMediaTypes defaults
 Question: How should we handle this media type?
 ```

@@ -9,7 +9,7 @@ The Model Context Protocol (MCP) is a standard way for AI assistants like Claude
 - Consult multiple AI models when uncertain
 - Get alternative perspectives on complex problems
 - Receive critiques of proposed solutions
-- "Phone a friend" when stuck on difficult tasks
+- Consult second brain when stuck on difficult tasks
 
 ## Prerequisites
 
@@ -56,7 +56,7 @@ stdio transport spawns the server as a subprocess and communicates via stdin/std
 ```json
 {
   "mcpServers": {
-    "council": {
+    "second-brain": {
       "command": "node",
       "args": ["/path/to/second-brain/dist/server/stdio.js"],
       "description": "Consult frontier AI models for alternative perspectives"
@@ -72,7 +72,7 @@ HTTP transport connects to a running server instance.
 ```json
 {
   "mcpServers": {
-    "council": {
+    "second-brain": {
       "url": "http://127.0.0.1:3000/mcp",
       "transport": "streamable-http",
       "description": "Consult frontier AI models for alternative perspectives"
@@ -88,7 +88,7 @@ For older MCP clients (2024-11-05 spec), the server also supports Server-Sent Ev
 ```json
 {
   "mcpServers": {
-    "council": {
+    "second-brain": {
       "url": "http://127.0.0.1:3000/mcp",
       "transport": "sse",
       "description": "Consult frontier AI models (SSE transport - deprecated)"
@@ -109,7 +109,7 @@ In Claude Code, try using the Council:
 Can you consult the Council about: "What is the best way to implement authentication in a Node.js app?"
 ```
 
-Claude Code should automatically invoke the `phone_council` tool and present you with responses from all configured models.
+Claude Code should automatically invoke the `consult_second_brain` tool and present you with responses from all configured models.
 
 ## Using the Council in Claude Code
 
@@ -149,7 +149,7 @@ Claude: "Let me consult the Council for different debugging approaches..."
 ## Tool Details
 
 ### Tool Name
-`phone_council` (preferred) or `council_consult` (deprecated alias)
+`consult_second_brain`
 
 ### Tool Parameters
 
@@ -221,9 +221,9 @@ The tool returns structured data with:
 }
 ```
 
-### Example Call Flow (list_models → phone_council)
+### Example Call Flow (list_models → consult_second_brain)
 
-Use `list_models` to discover available model names, then pass one or more names to `phone_council`:
+Use `list_models` to discover available model names, then pass one or more names to `consult_second_brain`:
 
 ```json
 // 1) Discover model names
@@ -232,11 +232,11 @@ Use `list_models` to discover available model names, then pass one or more names
   "params": { "name": "list_models", "arguments": {} }
 }
 
-// 2) Use a returned name in phone_council
+// 2) Use a returned name in consult_second_brain
 {
   "method": "tools/call",
   "params": {
-    "name": "phone_council",
+    "name": "consult_second_brain",
     "arguments": {
       "prompt": "Review this code for edge cases",
       "models": ["Claude Sonnet 4.5"]
@@ -275,7 +275,7 @@ If your Council server runs on a different port:
 ```json
 {
   "mcpServers": {
-    "council": {
+    "second-brain": {
       "url": "http://127.0.0.1:8080/mcp",
       "transport": "streamable-http"
     }
@@ -290,13 +290,13 @@ You can run multiple Council servers with different configurations:
 ```json
 {
   "mcpServers": {
-    "council-fast": {
+    "second-brain-fast": {
       "url": "http://127.0.0.1:3000/mcp",
-      "description": "Fast Council (30s timeout)"
+      "description": "Fast second brain (30s timeout)"
     },
-    "council-thorough": {
+    "second-brain-thorough": {
       "url": "http://127.0.0.1:3001/mcp",
-      "description": "Thorough Council (120s timeout)"
+      "description": "Thorough second brain (120s timeout)"
     }
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "second-brain",
   "version": "1.0.0",
-  "description": "Multi-model AI deliberation CLI tool",
+  "description": "MCP council daemon for AI agents that consults multiple frontier models in parallel",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
@@ -33,11 +33,15 @@
   "keywords": [
     "ai",
     "llm",
+    "mcp",
+    "model-context-protocol",
+    "agents",
+    "council",
     "cli",
     "multi-model"
   ],
-  "author": "",
-  "license": "ISC",
+  "author": "Jonathan Schwartz",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/Schwartz10/second-brain/issues"
   },

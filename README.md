@@ -1,8 +1,20 @@
-# Second Brain - Council Daemon Service
+# second brain - Council Daemon for AI Agents
 
-A daemon service that provides parallel consultation with frontier AI models. Multiple clients (CLI, Claude Code via MCP, or custom tools) can consult the Council when they need alternative perspectives, critiques, or help getting unstuck.
+When an AI agent gets stuck, it should be able to consult a few expert models. second brain makes that real: it runs a local MCP server that queries a council of frontier models in parallel and returns independent critiques plus structured synthesis.
 
-**Primary Use Case:** "Phone a Friend" - when an AI agent (like Claude Code) is uncertain or stuck, it can consult the Council for independent perspectives from multiple models.
+**Primary Use Case:** Consult second brain for AI agents (Claude Code, Codex, or custom clients) that need alternative perspectives, code reviews, or help getting unstuck.
+
+## Why This Exists
+
+AI agents are strong but brittle on complex decisions. second brain adds a fast, low‑friction way to:
+- Validate architectural choices before you commit
+- Catch blind spots through multi‑model critique
+- Compare solutions quickly without manual prompting
+- Get unstuck when a single model is uncertain
+
+## How It Works
+
+Clients call the MCP tool `consult_second_brain`, which fans out to the configured Council models in parallel, then returns raw responses plus structured synthesis data. You can also query a subset of models or list available models for precise selection.
 
 ## Get Started
 
@@ -38,9 +50,9 @@ The server listens on `http://localhost:3000` by default.
 
 ### 3. Install the Context Skill (Optional)
 
-The repo includes an associated Codex skill to help craft strong `phone_council` context:
+The repo includes an associated Codex skill to help craft strong `consult_second_brain` context:
 
-- Skill source: `.agents/skills/phone-council-context`
+- Skill source: `.agents/skills/second-brain-context`
 
 Install by copying that folder into your Codex skills directory, or package it with your skill tooling if you prefer distributing a `.skill` file.
 
@@ -54,6 +66,24 @@ second-brain ask "What is the best way to handle errors in TypeScript?"
 
 Claude Code integration:
 - See `docs/MCP_SETUP.md` for MCP setup steps.
+
+## Using the Context Skill in Your Projects
+
+This repo includes a Codex/Claude Code skill that helps craft high‑signal context for council consultations.
+
+To use it in another repo:
+
+```bash
+# From your project directory
+cp -r /path/to/second-brain/.agents/skills/second-brain-context ./.agents/skills/
+```
+
+What the skill provides:
+- Guidance for concise, structured context briefs
+- Examples for common consultation scenarios
+- Tips to avoid context truncation
+
+See `.agents/skills/second-brain-context/SKILL.md` for details.
 
 ## Architecture
 
@@ -174,8 +204,31 @@ Environment variables (`.env` file):
 # Server Configuration
 PORT=3000                        # Server port (default: 3000)
 
-# Council Configuration
+# Debugging
 SECOND_BRAIN_DEBUG=false         # Enable debug logging
+
+# Timeouts
+SECOND_BRAIN_TIMEOUT_MS=30000    # Request timeout for providers
+
+# Rate Limiting (server)
+RATE_LIMIT_WINDOW_MS=900000      # 15 minutes
+RATE_LIMIT_MAX_REQUESTS=100      # Max requests per window
+
+# Personal Brain
+BRAIN_MODEL=anthropic/claude-sonnet-4-5-20250929
+
+# Output Redaction
+SECOND_BRAIN_REDACT_EMAILS=true
+
+# Attachments
+SECOND_BRAIN_ATTACHMENT_MAX_BYTES=5000000
+SECOND_BRAIN_ATTACHMENT_MAX_TOTAL_BYTES=20000000
+SECOND_BRAIN_ATTACHMENT_MAX_COUNT=5
+SECOND_BRAIN_ATTACHMENT_ALLOWED_MEDIA_TYPES=text/*,application/json,application/pdf,application/zip,image/*
+SECOND_BRAIN_ATTACHMENT_ALLOW_URLS=false
+
+# Fallbacks
+SECOND_BRAIN_FALLBACK_COOLDOWN_MS=120000
 ```
 
 ## Development
@@ -226,9 +279,9 @@ npx tsc --noEmit
 
 ## API Documentation
 
-### MCP Tool: phone_council
+### MCP Tool: consult_second_brain
 
-Consult the Council via the Model Context Protocol. The old `council_consult` name remains as a deprecated alias.
+Consult the Council via the Model Context Protocol.
 
 **Parameters:**
 - `prompt` (string, required): The question or problem to consult about
@@ -390,4 +443,4 @@ See [docs/SECURITY.md](./docs/SECURITY.md) for comprehensive security documentat
 
 ## License
 
-ISC
+MIT
