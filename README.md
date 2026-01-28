@@ -30,6 +30,8 @@ Run the MCP server:
 npm run server
 ```
 
+If you use MCP stdio transport, you do not need to run the server separately.
+
 ## Model Selection (council.config.ts)
 
 You can customize which models and fallbacks the Council uses in `council.config.ts` at the repo root. Models are tried in order, so the first entry in `models` is the primary and the rest are fallbacks.
@@ -68,6 +70,14 @@ llm-council ask "What is the best way to handle errors in TypeScript?"
 
 Claude Code integration:
 - See `docs/MCP_SETUP.md` for MCP setup steps.
+
+## MCP CLI Setup (Quick Add)
+
+If your CLI supports MCP shortcuts, you can add the server quickly, for example:
+
+```
+/mcp add llm-council http://127.0.0.1:3000/mcp
+```
 
 ## More Docs
 

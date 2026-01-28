@@ -27,6 +27,8 @@ Config file location:
 }
 ```
 
+Note: With stdio transport, the MCP client starts the server process for you, so you do not need to run `npm run server` separately.
+
 ### Option 2: Streamable HTTP Transport
 
 ```json
@@ -59,4 +61,3 @@ Config file location:
 
 - `consult_llm_council` — consult all or a subset of models
 - `list_models` — list configured model display names and IDs
-
